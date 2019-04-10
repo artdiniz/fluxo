@@ -126,7 +126,7 @@ $(
 
 function rebase_fluxo {
   total_argc=$#
-  while test $# > 0
+  while test $# -gt 0
   do
     case "$1" in
     -h|--help)
