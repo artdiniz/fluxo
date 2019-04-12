@@ -93,7 +93,7 @@ $(
 )
 
 $(
-if [ $unknown_to_fluxo_branches != '' ]; then
+if [ "$unknown_to_fluxo_branches" != '' ]; then
 echo -ne "\
 $( tput setaf 3)$( tput smul)$( tput bold)$(($numberOfUnknownBranches+1)) branches$(tput sgr0) desconhecidas não serão atualizadas. 
            Elas não constam no arquivo '_fluxo_branches' e não é possível determinar sua ordem:
@@ -104,11 +104,11 @@ $(
   xargs -I {} bash -c 'echo -ne "        $(tput setaf 3)$( tput bold)•$(tput sgr0) {}\n"'
 )
 "
-  fi
+fi
 )
 
 $(
-if [ $not_affected_branches != '' ]; then
+if [ "$not_affected_branches" != '' ]; then
 echo -ne "\
 $( tput setaf 3)$( tput smul)$( tput bold)$(($numberOfNotAffectedBranches+1)) branches$(tput sgr0) do fluxo $( tput setaf 3)$( tput smul)$( tput bold)não serão$(tput sgr0) atualizadas. Por análise dos commits, a branch $( tput setaf 3)$( tput smul)$( tput bold)$(tput smul)$next_branch$(tput sgr0) veio depois delas:
 
@@ -118,10 +118,10 @@ $(
   xargs -I {} bash -c 'echo -ne "        $(tput setaf 3)$( tput bold)•$(tput sgr0) {}\n"'
 )
 "
-  fi
+fi
 )
 "
-  echo -ne "$PRE_CONFIRM_STATUS_MESSAGE"
+  echo -e "$PRE_CONFIRM_STATUS_MESSAGE"
 }
 
 function rebase_fluxo {
@@ -130,7 +130,8 @@ function rebase_fluxo {
   do
     case "$1" in
     -h|--help)
-      print_full_usage | less -RF
+      print_full_usage | less -XR
+      clear
       exit $?
       ;;
     --continue|--skip|--abort)
