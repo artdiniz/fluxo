@@ -12,7 +12,7 @@ $(tput bold)ACTIONS$(tput sgr0)
 
   --help                         show detailed instructions
   --format=<format-options>      <format-options> pattern passed to \`git for-each-ref\`
-  -v|--verbose                   show info about remotes
+  -v|--verbose                   show info about remotes and unknown branches (branches that are not in fluxo)
 "
 
 function show_fluxo_branches {
@@ -107,7 +107,29 @@ function show_fluxo {
   fi
   
   if [ $verbose -eq 1 ]; then
+
+    numberOfFluxoBranches="$(echo -ne "$b" | wc -l | xargs)"
+    echo
+    echo "$numberOfFluxoBranches fluxo branches"
+    echo
     echo -e "$b" | xargs -I {} bash -c "git br -v --color=always | grep --color=never {}"
+
+    all_affected_branches="$(git br -v --color=always)"
+    fluxo_ordered_branches_for_grep="$(echo -ne "$b" | tr '\n' '|')"
+
+    unknown_to_fluxo_branches=$(echo -ne "$all_affected_branches" | grep -v -E "${fluxo_ordered_branches_for_grep%|}")
+    unknown_to_fluxo_branches=${unknown_to_fluxo_branches##"\n"}
+    unknown_to_fluxo_branches=${unknown_to_fluxo_branches%%"\n"}
+    numberOfUnknownBranches="$(echo -ne "$unknown_to_fluxo_branches" | wc -l | xargs)"
+
+    if [ "$unknown_to_fluxo_branches" != '' ]; then
+      echo
+      echo "$(($numberOfUnknownBranches + 1)) unknown"
+      echo
+      echo -e "$unknown_to_fluxo_branches"
+    fi
+
+    echo
   else
     echo -e "$b"
   fi
