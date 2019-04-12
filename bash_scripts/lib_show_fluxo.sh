@@ -13,11 +13,6 @@ $(tput bold)ACTIONS$(tput sgr0)
   --help                         show detailed instructions
   --format=<format-options>      <format-options> pattern passed to \`git for-each-ref\`
   -v|--verbose                   show info about remotes
-
-$(tput bold)PARAMS$(tput sgr0)
-
-  <a-branch-da-aula-que-teve-mudancas> A branch que foi modificada com novos commits
-  <a-branch-da-proxima-aula> é a branch da aula seguinte à que foi modificada, caso a branch aula1 tenha sido modificada, é a branch da aula 2
 "
 
 function show_fluxo_branches {
@@ -28,10 +23,11 @@ function show_fluxo_branches {
         branchesGrepArg=$(git br --format="%(refname:short)" | tr '\n' '|')
         branches=$(grep -E "${branchesGrepArg%|}" $FILE_NAME)
         
-        formattedBranches=$(
+        formattedBranches="$(
             echo -ne "$branches" |
-            xargs -I {} git for-each-ref "$@" --color=always "refs/heads/{}"
-        )
+            xargs -I {} echo "git for-each-ref $(echo -e "$@") --color=always 'refs/heads/{}'" | 
+            bash -
+        )"
 
         echo -e "${formattedBranches%"\n"}"
     else
@@ -50,40 +46,70 @@ function errorline {
 }
 
 function print_fluxo_show_usage_and_die {
-  echo -ne "\n$FLUXO_SHOW_HELP_MESSAGE\n"
+  echo "Invalid arguments: $@"
+  echo -e "\n$FLUXO_SHOW_HELP_MESSAGE\n"
   exit $?
 }
 
 function print_fluxo_show_usage {
-  echo -ne "\n$FLUXO_SHOW_HELP_MESSAGE"
+  echo -e "\n$FLUXO_SHOW_HELP_MESSAGE"
 }
 
 function show_fluxo {
-    if [ $# == 0 ]; then
-        show_fluxo_branches --format="%(if)%(HEAD)%(then)* %(color:green)%(else)  %(end)%(refname:short)"
-    elif [ $# == 1 ]; then
-        case "$1" in
-        -v|--verbose)
-            show_fluxo_branches --format="%(refname:short)" | xargs -I {} bash -c "git br -v --color=always | grep --color=never {}"
-            exit $?
-        ;;
-        --format*)
-            show_fluxo_branches $1
-            exit
-        ;;
-        -h|--help)
-            print_fluxo_show_usage | less -RF
-            exit $?
-        ;;
-        *)
-            print_fluxo_show_usage_and_die
-        ;;
-        esac
-    elif [ $# > 1 ]; then
-        print_fluxo_show_usage_and_die
-    fi
+  format="%(if)%(HEAD)%(then)* %(color:green)%(else)  %(end)%(refname:short)"
+  verbose=0
+
+  total_argc=$#
+  while test $# -gt 0
+  do
+    case "$1" in
+    show)
+      shift
+    ;;
+    --)
+      shift
+    ;;
+    -h|--help)
+      print_fluxo_show_usage | less -XR
+      clear
+      exit $?
+    ;;
+    -v|--verbose)
+      format="%(refname:short)"
+      verbose=1
+      break
+    ;;
+    --format*)
+      format="${1##--format}"
+      shift
+      if [ -z "$format" ]; then
+          if [ -z "$1" ]; then 
+              print_fluxo_show_usage_and_die "$@"
+          elif [ "${1##-}" == "$1" ]; then
+              format="$1"
+          else
+              print_fluxo_show_usage_and_die "$@"
+          fi
+      else
+          format="${format##=}"
+      fi
+      shift
+    ;;
+    *)
+      print_fluxo_show_usage_and_die "$@"
+    ;;
+    esac
+  done
+
+  b="$(show_fluxo_branches --format=\""$format"\")"
+  
+  if [ $verbose -eq 1 ]; then
+    echo -e "$b" | xargs -I {} bash -c "git br -v --color=always | grep --color=never {}"
+  else
+    echo -e "$b"
+  fi
 }
 
 function show_fluxo_raw {
-    show_fluxo_branches --format="%(refname:short)" "$@"
+    show_fluxo_branches --format=\""%(refname:short)\"" "$@"
 }
