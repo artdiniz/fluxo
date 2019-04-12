@@ -1,4 +1,4 @@
-#!/bin/bash -ez
+#!/bin/bash -e
 
 . $(cd "$(dirname "$0")" && pwd)"/lib_style.sh"
 
