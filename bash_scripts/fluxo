@@ -37,16 +37,15 @@ case "$1" in
     ;;
 show)
     shift
-    # [ -z $1 ] && show_fluxo || show_fluxo $1
-    show_fluxo $@
+    show_fluxo "$@"
     ;;
 diff)
     shift
-    generate_fluxo_diff_files $@
+    generate_fluxo_diff_files
     ;;
 rebase)
     shift
-    rebase_fluxo $@
+    rebase_fluxo "$@"
     ;;
 *)
     fluxo_print_usage
