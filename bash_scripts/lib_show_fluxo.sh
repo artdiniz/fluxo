@@ -31,18 +31,16 @@ function show_fluxo_branches {
 
         echo -e "${formattedBranches%"\n"}"
     else
+
+        function errorline {
+          echo -e "$(tput setaf 7)$(tput setab 1)$(tput bold) Error $(tput sgr0) $(tput setaf 1)$(tput bold)•$(tput sgr0)"
+        }
+        
         echo
         echo "$(errorline)$(tput bold) No $(tput sgr0 && tput smso) $FILE_NAME $(tput rmso && tput bold) file found. Aborting!$(tput sgr0)"
         echo "$(errorline) There must be a file named $FILE_NAME where all fluxo branches are listed ordered per line"
-        echo
         exit 1
     fi
-}
-
-
-
-function errorline {
-    echo -ne "$(tput setaf 7)$(tput setab 1)$(tput bold) Error $(tput sgr0) $(tput setaf 1)$(tput bold)•$(tput sgr0)"
 }
 
 function print_fluxo_show_usage_and_die {
@@ -52,7 +50,7 @@ function print_fluxo_show_usage_and_die {
 }
 
 function print_fluxo_show_usage {
-  echo -e "\n$FLUXO_SHOW_HELP_MESSAGE"
+  echo -e "\n$FLUXO_SHOW_HELP_MESSAGE\n"
 }
 
 function show_fluxo {
@@ -102,6 +100,11 @@ function show_fluxo {
   done
 
   b="$(show_fluxo_branches --format=\""$format"\")"
+
+  if [ $? != 0 ]; then 
+    echo -e "$b\n"
+    exit $?
+  fi
   
   if [ $verbose -eq 1 ]; then
     echo -e "$b" | xargs -I {} bash -c "git br -v --color=always | grep --color=never {}"
