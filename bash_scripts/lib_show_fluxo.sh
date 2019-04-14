@@ -121,15 +121,15 @@ function render_branches {
   local digits="${#number_of_branches}"
 
   local counted_and_formatted_branches="$(
-    echo -e "$formatted_branches" | 
-    awk -v digits="$digits" '{print sprintf("%0"digits"d",NR-1) "$1"}'
+    echo -e "$formatted_branches" |
+    awk -F'\n' -v digits="$digits" '{print sprintf("%0"digits"d",NR-1)")"$1}'
   )"
 
 	if [ "$number_of_branches" -gt 0 ]; then
 		echo
 		echo "$(($number_of_branches)) unknown branches"
 		echo
-		[ $verbose -eq 1 ] && asVerbose "$branches" || echo -e "$formatted_branches"
+		[ $verbose -eq 1 ] && asVerbose "$branches" || echo -e "$counted_and_formatted_branches"
 	fi
 }
 
@@ -191,7 +191,6 @@ function show_fluxo {
   
 	local number_of_unexistent_fluxo_branches="$(count "$unexistent_fluxo_branches")"
 	
-
 	if [ "$number_of_unexistent_fluxo_branches" -gt 0 ]; then
 		echo
 		echo -e "$(errorline 'WARNING') $(($number_of_unexistent_fluxo_branches)) unexistent branches present in \`_fluxo_branches\` file:"
