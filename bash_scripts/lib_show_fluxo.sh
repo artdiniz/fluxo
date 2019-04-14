@@ -109,6 +109,30 @@ function count {
 	echo "$count"
 }
 
+function render_branches {
+  local count_title="$1"
+  local branches="$2"
+  local format="$3"
+  local verbose="$4"
+
+  local formatted_branches="$(print_formatted_branches "$branches" --format=\""$format"\")"
+  local number_of_branches="$(count "$branches")"
+
+  local digits="${#number_of_branches}"
+
+  local counted_and_formatted_branches="$(
+    echo -e "$formatted_branches" | 
+    awk -v digits="$digits" '{print sprintf("%0"digits"d",NR-1) "$1"}'
+  )"
+
+	if [ "$number_of_branches" -gt 0 ]; then
+		echo
+		echo "$(($number_of_branches)) unknown branches"
+		echo
+		[ $verbose -eq 1 ] && asVerbose "$branches" || echo -e "$formatted_branches"
+	fi
+}
+
 function show_fluxo {
   local format="%(if)%(HEAD)%(then)* %(color:green)%(else)  %(end)%(refname:short)"
   local verbose=0
@@ -162,16 +186,11 @@ function show_fluxo {
   fi
 
 	local existent_branches="$(get_existent_fluxo_branches "$fluxo_branches_from_file")"
-	local number_of_existent_branches="$(count "$existent_branches")"
-
 	local unknown_to_fluxo_branches="$(get_unknown_branches "$fluxo_branches_from_file")"
-	local number_of_unknown_to_fluxo_branches="$(count "$unknown_to_fluxo_branches")"
-	
 	local unexistent_fluxo_branches="$(get_unexistent_fluxo_branches "$fluxo_branches_from_file")"
+  
 	local number_of_unexistent_fluxo_branches="$(count "$unexistent_fluxo_branches")"
 	
-	local formatted_existent_branches="$(print_formatted_branches "$existent_branches" --format=\""$format"\")"
-	local formatted_unknown_to_fluxo_branches="$(print_formatted_branches "$unknown_to_fluxo_branches" --format=\""$format"\")"
 
 	if [ "$number_of_unexistent_fluxo_branches" -gt 0 ]; then
 		echo
@@ -182,18 +201,8 @@ function show_fluxo {
 		echo -e "$(errorline 'WARNING') Their names may be mispelled or those branches are not created nor pulled from remote yet."
 	fi
 
-	echo
-	echo "$number_of_existent_branches fluxo branches"
-	echo
-	[ $verbose -eq 1 ] && asVerbose "$existent_branches" || echo -e "$formatted_existent_branches"
-
-	if [ "$number_of_unknown_to_fluxo_branches" -gt 0 ]; then
-		echo
-		echo "$(($number_of_unknown_to_fluxo_branches)) unknown branches"
-		echo
-		[ $verbose -eq 1 ] && asVerbose "$unknown_to_fluxo_branches" || echo -e "$formatted_unknown_to_fluxo_branches"
-	fi
-
+  render_branches "fluxo branches" "$existent_branches" "$format" "$verbose"
+  render_branches "unknown branches" "$unknown_to_fluxo_branches" "$format" "$verbose"
 
 	echo
 }
