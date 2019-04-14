@@ -13,34 +13,78 @@ $(tput bold)ACTIONS$(tput sgr0)
   --help                         show detailed instructions
   --format=<format-options>      <format-options> pattern passed to \`git for-each-ref\`
   -v|--verbose                   show info about remotes and unknown branches (branches that are not in fluxo)
+
+$(tput bold)SAMPLE COMMANDS$(tput sgr0)
+
+  - Shows last commit short hash before branch name:
+      git fls --format=\"%(color:cyan) %(objectname:short) %(color:reset) %(refname:short)\"
+
+  - Shows list of full hashes for each branch HEAD commit
+      git fls --format=\"%(objectname)\"
 "
 
-function show_fluxo_branches {
-    PROJECT_DIR=$(echo `pwd`)
-    FILE_NAME="_fluxo_branches"
+function errorline {
+	[ -z "$1" ] && local text="Error " || local text="$1"
+	echo -e "$(tput setaf 7)$(tput setab 1)$(tput bold) $text $(tput sgr0) "
+}
 
-    if [ -e "$PROJECT_DIR/$FILE_NAME" ]; then
-        branchesGrepArg=$(git br --format="%(refname:short)" | tr '\n' '|')
-        branches=$(grep -E "${branchesGrepArg%|}" $FILE_NAME)
-        
-        formattedBranches="$(
-            echo -ne "$branches" |
-            xargs -I {} echo "git for-each-ref $(echo -e "$@") --color=always 'refs/heads/{}'" | 
-            bash -
-        )"
+function errordot {
+	echo -e "$(tput setaf 1 && tput bold)•$(tput sgr0)"
+}
 
-        echo -e "${formattedBranches%"\n"}"
-    else
+function read_branches_file {
+  local PROJECT_DIR=$(echo `pwd`)
+  local FILE_NAME="_fluxo_branches"
 
-        function errorline {
-          echo -e "$(tput setaf 7)$(tput setab 1)$(tput bold) Error $(tput sgr0) $(tput setaf 1)$(tput bold)•$(tput sgr0)"
-        }
-        
-        echo
-        echo "$(errorline)$(tput bold) No $(tput sgr0 && tput smso) $FILE_NAME $(tput rmso && tput bold) file found. Aborting!$(tput sgr0)"
-        echo "$(errorline) There must be a file named $FILE_NAME where all fluxo branches are listed ordered per line"
-        exit 1
-    fi
+	local FILE_PATH="$PROJECT_DIR/$FILE_NAME"
+
+  if [ -e "$PROJECT_DIR/$FILE_NAME" ]; then
+		cat "$FILE_PATH"
+  else
+		
+		echo
+		echo "$(errorline)$(errordot)$(tput bold) No $(tput sgr0 && tput smso) $FILE_NAME $(tput rmso && tput bold) file found. Aborting!$(tput sgr0)"
+		echo "$(errorline)$(errordot) There must be a file named $(tput smso) $FILE_NAME $(tput sgr0) where all fluxo branches are listed ordered per line"
+		exit 1
+  fi
+}
+
+function print_formatted_branches {
+		branches=$1
+		git_for_each_ref_args="${@:2}"
+
+		formattedBranches="$(
+			echo -ne "$branches" |
+			xargs -I {} echo "git for-each-ref $(echo -e "$git_for_each_ref_args") --color=always 'refs/heads/{}'" | 
+			bash -
+		)"
+
+		echo -e "${formattedBranches%"\n"}"
+}
+
+function get_unknown_branches {
+	local fluxo_branches_from_file="$1"
+
+	local all_branches=$(git br --format="%(refname:short)")
+  local fluxo_branches_for_grep=$(echo -e "$fluxo_branches_from_file" | tr '\n' '|')
+	local branches="$(echo -e "$all_branches" | grep -v -E "${fluxo_branches_for_grep%|}")"
+	echo -e "$branches"
+}
+
+function get_unexistent_fluxo_branches {
+	local fluxo_branches_from_file="$1"
+
+  local existentBranchesGrepArg=$(git br --format="%(refname:short)" | tr '\n' '|')
+	local branches="$(echo -e "$fluxo_branches_from_file" | grep -v -E "${existentBranchesGrepArg%|}")"
+	echo -e "$branches"
+}
+
+function get_existent_fluxo_branches {
+	local fluxo_branches_from_file="$1"
+
+  local existentBranchesGrepArg=$(git br --format="%(refname:short)" | tr '\n' '|')
+	local branches="$(echo -e "$fluxo_branches_from_file" | grep -E "${existentBranchesGrepArg%|}")"
+	echo -e "$branches"
 }
 
 function print_fluxo_show_usage_and_die {
@@ -53,9 +97,21 @@ function print_fluxo_show_usage {
   echo -e "\n$FLUXO_SHOW_HELP_MESSAGE\n"
 }
 
+function asVerbose {
+	local branches="$1"
+	echo -e "$branches" | xargs -I {} bash -c "git br -v --color=always | grep --color=never {}"
+}
+
+function count {
+	local to_be_counted="$1"
+	local line_count="$(echo -ne "$to_be_counted" | wc -l | xargs)"
+	[ "$to_be_counted" == '' ] && local count=0 || local count=$(($line_count + 1))
+	echo "$count"
+}
+
 function show_fluxo {
-  format="%(if)%(HEAD)%(then)* %(color:green)%(else)  %(end)%(refname:short)"
-  verbose=0
+  local format="%(if)%(HEAD)%(then)* %(color:green)%(else)  %(end)%(refname:short)"
+  local verbose=0
 
   total_argc=$#
   while test $# -gt 0
@@ -99,42 +155,56 @@ function show_fluxo {
     esac
   done
 
-  b="$(show_fluxo_branches --format=\""$format"\")"
-
-  if [ $? != 0 ]; then 
-    echo -e "$b\n"
+	local fluxo_branches_from_file="$(read_branches_file)"
+	if [ $? != 0 ]; then 
+    echo -e "$fluxo_branches_from_file\n"
     exit $?
   fi
-  
-  if [ $verbose -eq 1 ]; then
 
-    numberOfFluxoBranches="$(echo -ne "$b" | wc -l | xargs)"
-    echo
-    echo "$numberOfFluxoBranches fluxo branches"
-    echo
-    echo -e "$b" | xargs -I {} bash -c "git br -v --color=always | grep --color=never {}"
+	local existent_branches="$(get_existent_fluxo_branches "$fluxo_branches_from_file")"
+	local number_of_existent_branches="$(count "$existent_branches")"
 
-    all_affected_branches="$(git br -v --color=always)"
-    fluxo_ordered_branches_for_grep="$(echo -ne "$b" | tr '\n' '|')"
+	local unknown_to_fluxo_branches="$(get_unknown_branches "$fluxo_branches_from_file")"
+	local number_of_unknown_to_fluxo_branches="$(count "$unknown_to_fluxo_branches")"
+	
+	local unexistent_fluxo_branches="$(get_unexistent_fluxo_branches "$fluxo_branches_from_file")"
+	local number_of_unexistent_fluxo_branches="$(count "$unexistent_fluxo_branches")"
+	
+	local formatted_existent_branches="$(print_formatted_branches "$existent_branches" --format=\""$format"\")"
+	local formatted_unknown_to_fluxo_branches="$(print_formatted_branches "$unknown_to_fluxo_branches" --format=\""$format"\")"
 
-    unknown_to_fluxo_branches=$(echo -ne "$all_affected_branches" | grep -v -E "${fluxo_ordered_branches_for_grep%|}")
-    unknown_to_fluxo_branches=${unknown_to_fluxo_branches##"\n"}
-    unknown_to_fluxo_branches=${unknown_to_fluxo_branches%%"\n"}
-    numberOfUnknownBranches="$(echo -ne "$unknown_to_fluxo_branches" | wc -l | xargs)"
+	if [ "$number_of_unexistent_fluxo_branches" -gt 0 ]; then
+		echo
+		echo -e "$(errorline 'WARNING') $(($number_of_unexistent_fluxo_branches)) unexistent branches present in \`_fluxo_branches\` file:"
+		echo
+		echo -e "$unexistent_fluxo_branches" | xargs -I {} echo "$(tput setaf 1 && tput bold)•$(tput sgr0) {}"
+		echo
+		echo -e "$(errorline 'WARNING') Their names may be mispelled or those branches are not created nor pulled from remote yet."
+	fi
 
-    if [ "$unknown_to_fluxo_branches" != '' ]; then
-      echo
-      echo "$(($numberOfUnknownBranches + 1)) unknown"
-      echo
-      echo -e "$unknown_to_fluxo_branches"
-    fi
+	echo
+	echo "$number_of_existent_branches fluxo branches"
+	echo
+	[ $verbose -eq 1 ] && asVerbose "$existent_branches" || echo -e "$formatted_existent_branches"
 
-    echo
-  else
-    echo -e "$b"
-  fi
+	if [ "$number_of_unknown_to_fluxo_branches" -gt 0 ]; then
+		echo
+		echo "$(($number_of_unknown_to_fluxo_branches)) unknown branches"
+		echo
+		[ $verbose -eq 1 ] && asVerbose "$unknown_to_fluxo_branches" || echo -e "$formatted_unknown_to_fluxo_branches"
+	fi
+
+
+	echo
 }
 
 function show_fluxo_raw {
-    show_fluxo_branches --format=\""%(refname:short)\"" "$@"
+  local fluxo_branches_from_file="$(read_branches_file)"
+	if [ $? != 0 ]; then 
+    echo -e "$fluxo_branches_from_file\n"
+    exit $?
+  fi
+
+	local existent_branches=$(get_existent_fluxo_branches "$fluxo_branches_from_file")
+	print_formatted_branches "$existent_branches" --format=\""%(refname:short)\""
 }
