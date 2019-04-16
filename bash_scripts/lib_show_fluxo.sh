@@ -122,19 +122,19 @@ function render_branches {
 
   local counted_and_formatted_branches="$(
     echo -e "$formatted_branches" |
-    awk -F'\n' -v digits="$digits" '{print sprintf("%0"digits"d",NR-1)")"$1}'
+    awk -F'\n' -v digits="$digits" '{gsub("#dd", sprintf("%0"digits"d",NR-1) , $1); print $1}'
   )"
 
 	if [ "$number_of_branches" -gt 0 ]; then
 		echo
-		echo "$(($number_of_branches)) unknown branches"
+		echo "$(($number_of_branches)) $count_title"
 		echo
 		[ $verbose -eq 1 ] && asVerbose "$branches" || echo -e "$counted_and_formatted_branches"
 	fi
 }
 
 function show_fluxo {
-  local format="%(if)%(HEAD)%(then)* %(color:green)%(else)  %(end)%(refname:short)"
+  local format="%(if)%(HEAD)%(then) * %(color:cyan)#dd|%(color:reset) $(tput bold)%(color:green)%(refname:short)%(else)  \033[38;5;242m #dd|$(tput sgr0) %(refname:short)%(end)"
   local verbose=0
 
   total_argc=$#
