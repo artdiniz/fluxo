@@ -11,9 +11,10 @@ $(tput bold)USAGE$(tput sgr0)
 $(tput bold)ACTIONS$(tput sgr0)
 
   --help                                   show detailed instructions
-  --format=<format-options>                <format-options> pattern passed to \`git for-each-ref\`
-  -v|--verbose                             show info about remotes and unknown branches (branches that are not in fluxo)
-  --existent|--unknown|--unexistent        choose which kind of fluxo branches to show. Default is showing all of them
+  --format=<format-options>                <format-options> pattern passed to \`git for-each-ref\`;
+  -v|--verbose                             show info about remotes and unknown branches (branches that are not in fluxo);
+  --existent|--unknown|--unexistent        choose which kind of fluxo branches to show. Default is showing all of them;
+  --raw                                    remove all titles and decoration from output. Perfect for piping and processing in ohter programs;
 
 $(tput bold)SAMPLE COMMANDS$(tput sgr0)
 
@@ -115,23 +116,33 @@ function render_branches {
   local branches="$2"
   local format="$3"
   local verbose="$4"
-  [ -x $5 ] && local color="$(tput setaf 6)" || local color="$5"
+  local raw="$5"
+
+  [ -x $6 ] && local color="$(tput setaf 6)" || local color="$6"
+
+  if [ -z $format ]; then
+    [ $raw -eq 1 ] && local format="%(refname:short)" || local format="%(if)%(HEAD)%(then) * #color#dd|#rcolor $(tput bold)%(color:green)%(refname:short)%(else)  \033[38;5;242m #dd|$(tput sgr0) %(refname:short)%(end)"
+  fi
 
   local formatted_branches="$(print_formatted_branches "$branches" --format=\""$format"\")"
   local number_of_branches="$(count "$branches")"
 
-  local digits="${#number_of_branches}"
-
-  local counted_and_formatted_branches="$(
-    echo -e "$formatted_branches" |
-    awk -F'\n' -v color="$color" -v color_reset="$(tput sgr0)" -v digits="$digits" '{gsub("#color", color, $1); gsub("#rcolor", color_reset, $1); gsub("#dd", sprintf("%0"digits"d",NR-1) , $1); print $1}'
-  )"
-
 	if [ "$number_of_branches" -gt 0 ]; then
-    [ "$number_of_branches" -eq 1 ] && local pluralized_branch_word="branch" || local pluralized_branch_word="branches"
-		echo "$(tput smul)$(tput bold)$color$number_of_branches $branches_title$(tput rmul) $pluralized_branch_word$(tput sgr0)"
-		echo
-		[ $verbose -eq 1 ] && asVerbose "$branches" || echo -e "$counted_and_formatted_branches"
+    if [ $raw -eq 1 ]; then
+      echo "$formatted_branches"
+    else
+      local digits="${#number_of_branches}"
+
+      local counted_and_formatted_branches="$(
+        echo -e "$formatted_branches" |
+        awk -F'\n' -v color="$color" -v color_reset="$(tput sgr0)" -v digits="$digits" '{gsub("#color", color, $1); gsub("#rcolor", color_reset, $1); gsub("#dd", sprintf("%0"digits"d",NR-1) , $1); print $1}'
+      )"
+
+      [ "$number_of_branches" -eq 1 ] && local pluralized_branch_word="branch" || local pluralized_branch_word="branches"
+      echo "$(tput smul)$(tput bold)$color$number_of_branches $branches_title$(tput rmul) $pluralized_branch_word$(tput sgr0)"
+      echo
+      [ $verbose -eq 1 ] && asVerbose "$branches" || echo -e "$counted_and_formatted_branches"
+    fi
 	fi
 }
 
@@ -148,6 +159,7 @@ function render_join {
   done
 
   join_view="${join_view##[[:space:]]}"
+  join_view="${join_view##[[:space:]]}"
 
   echo -e "$join_view"
 }
@@ -162,8 +174,8 @@ function has {
 }
 
 function show_fluxo {
-  local format="%(if)%(HEAD)%(then) * #color#dd|#rcolor $(tput bold)%(color:green)%(refname:short)%(else)  \033[38;5;242m #dd|$(tput sgr0) %(refname:short)%(end)"
   local verbose=0
+  local raw=0
 
   local show_types=""
 
@@ -182,23 +194,23 @@ function show_fluxo {
       exit $?
     ;;
     -v|--verbose)
-      format="%(refname:short)"
-      verbose=1
+      local format="%(refname:short)"
+      local verbose=1
       break
     ;;
     --format*)
-      format="${1##--format}"
+      local format="${1##--format}"
       shift
       if [ -z "$format" ]; then
-          if [ -z "$1" ]; then 
-              print_fluxo_show_usage_and_die "$@"
-          elif [ "${1##-}" == "$1" ]; then
-              format="$1"
-          else
-              print_fluxo_show_usage_and_die "$@"
-          fi
+        if [ -z "$1" ]; then 
+          print_fluxo_show_usage_and_die "$@"
+        elif [ "${1##-}" == "$1" ]; then
+          local format="$1"
+        else
+          print_fluxo_show_usage_and_die "$@"
+        fi
       else
-          format="${format##=}"
+        local format="${format##=}"
       fi
       shift
     ;;
@@ -207,12 +219,16 @@ function show_fluxo {
 
       shift
     ;;
+    --raw)
+      local raw=1
+      shift
+    ;;
     *)
       print_fluxo_show_usage_and_die "$@"
     ;;
     esac
   done
-
+  
   local show_types=${show_types%%" "}
   if [ "$show_types" == '' ]; then 
     local show_types="existent unknown unexistent"
@@ -245,18 +261,23 @@ function show_fluxo {
 
   if [ $show_existent -eq 1 ]; then
     local existent_branches="$(get_existent_fluxo_branches "$fluxo_branches_from_file")"
-    local existent_view="$(render_branches "fluxo" "$existent_branches" "$format" "$verbose")"
+    local existent_view="$(render_branches "fluxo" "$existent_branches" "$format" "$verbose" "$raw")"
   fi
 
   if [ $show_unknow -eq 1 ]; then 
     local unknown_to_fluxo_branches="$(get_unknown_branches "$fluxo_branches_from_file")"
-    local unknown_to_fluxo_view="$(render_branches "unknown" "$unknown_to_fluxo_branches" "$format" "$verbose" "$(tput setaf 5)")"
+    local unknown_to_fluxo_view="$(render_branches "unknown" "$unknown_to_fluxo_branches" "$format" "$verbose" "$raw" "$(tput setaf 5)")"
   fi
 
   local view="$(render_join "$unexistent_view" "$existent_view" "$unknown_to_fluxo_view")"
-
-  echo -e "$view"
-  echo
+  
+  if [ $raw -eq 1 ]; then
+    echo -e "$view"
+  else
+    echo
+    echo -e "$view"
+    echo
+  fi
 }
 
 function show_fluxo_raw {
