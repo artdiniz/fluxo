@@ -12,7 +12,7 @@ function printBranchesOrderedByFluxo {
 function generate_fluxo_diff_files {
     color_setup
 
-    branches="$(show_fluxo_raw)"
+    branches="$(show_fluxo --existent --raw)"
 
     status="$?"
     if [ $status != 0 ]; then

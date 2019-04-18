@@ -181,7 +181,7 @@ function rebase_fluxo {
     new_commits_branch=$1
     next_branch=$2
 
-    fluxo_ordered_branches=$(show_fluxo_raw)
+    fluxo_ordered_branches=$(show_fluxo --raw --existent)
     fluxo_status=$?
     if [ $fluxo_status != 0 ]; then
       echo -ne "$fluxo_ordered_branches"

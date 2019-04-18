@@ -279,14 +279,3 @@ function show_fluxo {
     echo
   fi
 }
-
-function show_fluxo_raw {
-  local fluxo_branches_from_file="$(read_branches_file)"
-	if [ $? != 0 ]; then 
-    echo -e "$fluxo_branches_from_file\n"
-    exit $?
-  fi
-
-	local existent_branches=$(get_existent_fluxo_branches "$fluxo_branches_from_file")
-	print_formatted_branches "$existent_branches" --format=\""%(refname:short)\""
-}
