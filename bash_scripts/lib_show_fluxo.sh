@@ -92,7 +92,7 @@ function get_existent_fluxo_branches {
 function print_fluxo_show_usage_and_die {
   echo "Invalid arguments: $@"
   echo -e "\n$FLUXO_SHOW_HELP_MESSAGE\n"
-  exit $?
+  exit 1
 }
 
 function print_fluxo_show_usage {
@@ -120,7 +120,7 @@ function render_branches {
 
   [ -x $6 ] && local color="$(tput setaf 6)" || local color="$6"
 
-  if [ -z $format ]; then
+  if [ -z "$format" ]; then
     [ $raw -eq 1 ] && local format="%(refname:short)" || local format="%(if)%(HEAD)%(then) * #color#dd|#rcolor $(tput bold)%(color:green)%(refname:short)%(else)  \033[38;5;242m #dd|$(tput sgr0) %(refname:short)%(end)"
   fi
 
@@ -168,7 +168,7 @@ function has {
   list="$1"
   item="$2"
 
-  new_list=$(echo -e "$list" | sed s/$item//)
+  new_list=$(echo "$list" | sed s/$item//)
 
   [ "$new_list" == "$list" ] && echo 0 || echo 1
 }
