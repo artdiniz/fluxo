@@ -72,7 +72,7 @@ function print_full_usage {
 
 function print_usage_and_die {
   echo -ne "\n$FLUXO_REBASE_HELP_MESSAGE\n"
-  exit $?
+  exit 1
 }
 
 function print_status_message {
