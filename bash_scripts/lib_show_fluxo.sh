@@ -10,9 +10,10 @@ $(tput bold)USAGE$(tput sgr0)
 
 $(tput bold)ACTIONS$(tput sgr0)
 
-  --help                         show detailed instructions
-  --format=<format-options>      <format-options> pattern passed to \`git for-each-ref\`
-  -v|--verbose                   show info about remotes and unknown branches (branches that are not in fluxo)
+  --help                                   show detailed instructions
+  --format=<format-options>                <format-options> pattern passed to \`git for-each-ref\`
+  -v|--verbose                             show info about remotes and unknown branches (branches that are not in fluxo)
+  --existent|--unknown|--unexistent        choose which kind of fluxo branches to show. Default is showing all of them
 
 $(tput bold)SAMPLE COMMANDS$(tput sgr0)
 
@@ -128,16 +129,43 @@ function render_branches {
 
 	if [ "$number_of_branches" -gt 0 ]; then
     [ "$number_of_branches" -eq 1 ] && local pluralized_branch_word="branch" || local pluralized_branch_word="branches"
-		echo
 		echo "$(tput smul)$(tput bold)$color$number_of_branches $branches_title$(tput rmul) $pluralized_branch_word$(tput sgr0)"
 		echo
 		[ $verbose -eq 1 ] && asVerbose "$branches" || echo -e "$counted_and_formatted_branches"
 	fi
 }
 
+function render_join {
+  local join_view=""
+  for view in "$@"; do
+    if [ "$view" != "" ]; then
+      local join_view="$(
+        echo "$join_view"
+        echo
+        echo "$view"
+      )"
+    fi
+  done
+
+  join_view="${join_view##[[:space:]]}"
+
+  echo -e "$join_view"
+}
+
+function has {
+  list="$1"
+  item="$2"
+
+  new_list=$(echo -e "$list" | sed s/$item//)
+
+  [ "$new_list" == "$list" ] && echo 0 || echo 1
+}
+
 function show_fluxo {
   local format="%(if)%(HEAD)%(then) * #color#dd|#rcolor $(tput bold)%(color:green)%(refname:short)%(else)  \033[38;5;242m #dd|$(tput sgr0) %(refname:short)%(end)"
   local verbose=0
+
+  local show_types=""
 
   total_argc=$#
   while test $# -gt 0
@@ -174,43 +202,61 @@ function show_fluxo {
       fi
       shift
     ;;
+    --existent|--unknown|--unexistent)
+      local show_types="${1##--} $show_types"
+
+      shift
+    ;;
     *)
       print_fluxo_show_usage_and_die "$@"
     ;;
     esac
   done
 
+  local show_types=${show_types%%" "}
+  if [ "$show_types" == '' ]; then 
+    local show_types="existent unknown unexistent"
+  fi
+
+  local show_existent="$(has "$show_types" existent)"
+  local show_unknow="$(has "$show_types" unknown)"
+  local show_unexistent="$(has "$show_types" unexistent)"
+
 	fluxo_branches_from_file="$(read_branches_file)"
 	if [ $? != 0 ]; then 
     echo -e "$fluxo_branches_from_file\n"
     exit $?
   fi
-
-	local existent_branches="$(get_existent_fluxo_branches "$fluxo_branches_from_file")"
-	local unknown_to_fluxo_branches="$(get_unknown_branches "$fluxo_branches_from_file")"
-	local unexistent_fluxo_branches="$(get_unexistent_fluxo_branches "$fluxo_branches_from_file")"
-  
-	local number_of_unexistent_fluxo_branches="$(count "$unexistent_fluxo_branches")"
 	
-	if [ "$number_of_unexistent_fluxo_branches" -gt 0 ]; then
-		echo
-		echo -e "$(errorline 'WARNING') $(($number_of_unexistent_fluxo_branches)) unexistent branches present in \`_fluxo_branches\` file:"
-		echo
-		echo -e "$unexistent_fluxo_branches" | xargs -I {} echo "$(tput setaf 1 && tput bold)•$(tput sgr0) {}"
-		echo
-		echo -e "$(errorline 'WARNING') Their names may be mispelled or those branches are not created nor pulled from remote yet."
-    echo
-	fi
+  if [ $show_unexistent -eq 1 ]; then
+    local unexistent_fluxo_branches="$(get_unexistent_fluxo_branches "$fluxo_branches_from_file")"
+    local number_of_unexistent_fluxo_branches="$(count "$unexistent_fluxo_branches")"
+    
+    if [ "$number_of_unexistent_fluxo_branches" -gt 0 ]; then
+      local unexistent_view="$(
+        echo -e "$(errorline 'WARNING') $(($number_of_unexistent_fluxo_branches)) unexistent branches present in \`_fluxo_branches\` file:"
+        echo
+        echo -e "$unexistent_fluxo_branches" | xargs -I {} echo "$(tput setaf 1 && tput bold)•$(tput sgr0) {}"
+        echo
+        echo -e "$(errorline 'WARNING') Their names may be mispelled or those branches are not created nor pulled from remote yet."
+      )"
+    fi
+  fi
 
-  view="$(
-    render_branches "fluxo" "$existent_branches" "$format" "$verbose" &&
-    echo
-    render_branches "unknown" "$unknown_to_fluxo_branches" "$format" "$verbose" "$(tput setaf 5)" 
-  )"
+  if [ $show_existent -eq 1 ]; then
+    local existent_branches="$(get_existent_fluxo_branches "$fluxo_branches_from_file")"
+    local existent_view="$(render_branches "fluxo" "$existent_branches" "$format" "$verbose")"
+  fi
+
+  if [ $show_unknow -eq 1 ]; then 
+    local unknown_to_fluxo_branches="$(get_unknown_branches "$fluxo_branches_from_file")"
+    local unknown_to_fluxo_view="$(render_branches "unknown" "$unknown_to_fluxo_branches" "$format" "$verbose" "$(tput setaf 5)")"
+  fi
+
+  local view="$(render_join "$unexistent_view" "$existent_view" "$unknown_to_fluxo_view")"
 
   echo -e "$view"
-
-	echo
+  echo
 }
 
 function show_fluxo_raw {
