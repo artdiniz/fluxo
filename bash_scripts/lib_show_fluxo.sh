@@ -110,10 +110,11 @@ function count {
 }
 
 function render_branches {
-  local count_title="$1"
+  local branches_title="$1"
   local branches="$2"
   local format="$3"
   local verbose="$4"
+  [ -x $5 ] && local color="$(tput setaf 6)" || local color="$5"
 
   local formatted_branches="$(print_formatted_branches "$branches" --format=\""$format"\")"
   local number_of_branches="$(count "$branches")"
@@ -122,19 +123,20 @@ function render_branches {
 
   local counted_and_formatted_branches="$(
     echo -e "$formatted_branches" |
-    awk -F'\n' -v digits="$digits" '{gsub("#dd", sprintf("%0"digits"d",NR-1) , $1); print $1}'
+    awk -F'\n' -v color="$color" -v color_reset="$(tput sgr0)" -v digits="$digits" '{gsub("#color", color, $1); gsub("#rcolor", color_reset, $1); gsub("#dd", sprintf("%0"digits"d",NR-1) , $1); print $1}'
   )"
 
 	if [ "$number_of_branches" -gt 0 ]; then
+    [ "$number_of_branches" -eq 1 ] && local pluralized_branch_word="branch" || local pluralized_branch_word="branches"
 		echo
-		echo "$(($number_of_branches)) $count_title"
+		echo "$(tput smul)$(tput bold)$color$number_of_branches $branches_title$(tput rmul) $pluralized_branch_word$(tput sgr0)"
 		echo
 		[ $verbose -eq 1 ] && asVerbose "$branches" || echo -e "$counted_and_formatted_branches"
 	fi
 }
 
 function show_fluxo {
-  local format="%(if)%(HEAD)%(then) * %(color:cyan)#dd|%(color:reset) $(tput bold)%(color:green)%(refname:short)%(else)  \033[38;5;242m #dd|$(tput sgr0) %(refname:short)%(end)"
+  local format="%(if)%(HEAD)%(then) * #color#dd|#rcolor $(tput bold)%(color:green)%(refname:short)%(else)  \033[38;5;242m #dd|$(tput sgr0) %(refname:short)%(end)"
   local verbose=0
 
   total_argc=$#
@@ -148,8 +150,7 @@ function show_fluxo {
       shift
     ;;
     -h|--help)
-      print_fluxo_show_usage | less -XR
-      clear
+      print_fluxo_show_usage | less -XRF
       exit $?
     ;;
     -v|--verbose)
@@ -179,7 +180,7 @@ function show_fluxo {
     esac
   done
 
-	local fluxo_branches_from_file="$(read_branches_file)"
+	fluxo_branches_from_file="$(read_branches_file)"
 	if [ $? != 0 ]; then 
     echo -e "$fluxo_branches_from_file\n"
     exit $?
@@ -198,10 +199,16 @@ function show_fluxo {
 		echo -e "$unexistent_fluxo_branches" | xargs -I {} echo "$(tput setaf 1 && tput bold)•$(tput sgr0) {}"
 		echo
 		echo -e "$(errorline 'WARNING') Their names may be mispelled or those branches are not created nor pulled from remote yet."
+    echo
 	fi
 
-  render_branches "fluxo branches" "$existent_branches" "$format" "$verbose"
-  render_branches "unknown branches" "$unknown_to_fluxo_branches" "$format" "$verbose"
+  view="$(
+    render_branches "fluxo" "$existent_branches" "$format" "$verbose" &&
+    echo
+    render_branches "unknown" "$unknown_to_fluxo_branches" "$format" "$verbose" "$(tput setaf 5)" 
+  )"
+
+  echo -e "$view"
 
 	echo
 }
