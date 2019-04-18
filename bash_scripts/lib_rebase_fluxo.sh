@@ -130,7 +130,7 @@ function rebase_fluxo {
   do
     case "$1" in
     -h|--help)
-      print_full_usage | less -XR
+      print_full_usage | less -XRF
       clear
       exit $?
       ;;
