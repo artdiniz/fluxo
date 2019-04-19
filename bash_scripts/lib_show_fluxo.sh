@@ -66,26 +66,32 @@ function print_formatted_branches {
 
 function get_unknown_branches {
 	local fluxo_branches_from_file="$1"
+  local fluxo_branches_for_grep=$(echo -e "$fluxo_branches_from_file" | tr '\n' '|')
 
 	local all_branches=$(git br --format="%(refname:short)")
-  local fluxo_branches_for_grep=$(echo -e "$fluxo_branches_from_file" | tr '\n' '|')
-	local branches="$(echo -e "$all_branches" | grep -v -E "${fluxo_branches_for_grep%|}")"
+	
+  local branches="$(echo -e "$all_branches" | grep -v -E "${fluxo_branches_for_grep%|}")"
 	echo -e "$branches"
 }
 
-function get_unexistent_fluxo_branches {
+function get_unexistent_fluxo_branches   {
 	local fluxo_branches_from_file="$1"
+  local git_branch_args
 
-  local existentBranchesGrepArg=$(git br --format="%(refname:short)" | tr '\n' '|')
-	local branches="$(echo -e "$fluxo_branches_from_file" | grep -v -E "${existentBranchesGrepArg%|}")"
+  local all_branches=$(git br --format="%(refname:short)")
+  local all_branches_for_grep=$(echo -e "$all_branches" | tr '\n' '|')
+
+	local branches="$(echo -e "$fluxo_branches_from_file" | grep -v -E "${all_branches_for_grep%|}")"
 	echo -e "$branches"
 }
 
 function get_existent_fluxo_branches {
 	local fluxo_branches_from_file="$1"
 
-  local existentBranchesGrepArg=$(git br --format="%(refname:short)" | tr '\n' '|')
-	local branches="$(echo -e "$fluxo_branches_from_file" | grep -E "${existentBranchesGrepArg%|}")"
+  local all_branches=$(git br --format="%(refname:short)")
+  local all_branches_for_grep=$(echo -e "$all_branches" | tr '\n' '|')
+  
+	local branches="$(echo -e "$fluxo_branches_from_file" | grep -E "${all_branches_for_grep%|}")"
 	echo -e "$branches"
 }
 
@@ -215,7 +221,11 @@ function show_fluxo {
       shift
     ;;
     --existent|--unknown|--unexistent)
-      local show_types="${1##--} $show_types"
+      [ ${1##--} == 'existent' ] && local type="ex"
+      [ ${1##--} == 'unknown' ] && local type="unk"
+      [ ${1##--} == 'unexistent' ] && local type="unx"
+
+      local show_types="${type##--} $show_types"
 
       shift
     ;;
@@ -231,17 +241,17 @@ function show_fluxo {
   
   local show_types=${show_types%%" "}
   if [ "$show_types" == '' ]; then 
-    local show_types="existent unknown unexistent"
+    local show_types="ex unk unx"
   fi
 
-  local show_existent="$(has "$show_types" existent)"
-  local show_unknow="$(has "$show_types" unknown)"
-  local show_unexistent="$(has "$show_types" unexistent)"
+  local show_existent="$(has "$show_types" ex)"
+  local show_unknow="$(has "$show_types" unk)"
+  local show_unexistent="$(has "$show_types" unx)"
 
 	fluxo_branches_from_file="$(read_branches_file)"
 	if [ $? != 0 ]; then 
     echo -e "$fluxo_branches_from_file\n"
-    exit $?
+    exit 1
   fi
 	
   if [ $show_unexistent -eq 1 ]; then
