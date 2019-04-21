@@ -19,6 +19,9 @@ $(tput bold)FLUXO COMMANDS$(tput sgr0)
   <rebase>         Rebase after changing any fluxo previous steps
 "
 
+. $(cd "$(dirname "$0")" && pwd)"/lib_util.sh"
+. $(cd "$(dirname "$0")" && pwd)"/lib_parse_fluxo_branches_file.sh"
+. $(cd "$(dirname "$0")" && pwd)"/lib_view.sh"
 . $(cd "$(dirname "$0")" && pwd)"/lib_navigate_to_git_repository_root.sh"
 . $(cd "$(dirname "$0")" && pwd)"/lib_show_fluxo.sh"
 . $(cd "$(dirname "$0")" && pwd)"/lib_generate_fluxo_diff_files.sh"

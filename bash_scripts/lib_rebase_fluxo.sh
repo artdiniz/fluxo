@@ -189,33 +189,20 @@ function rebase_fluxo {
       echo
       exit $fluxo_status
     fi
-    
-    fluxo_ordered_branches_for_grep=$(echo -ne "$fluxo_ordered_branches" | tr '\n' '|')
-    
+
     all_affected_branches=$(git br --contains $next_branch --format="%(refname:short)")
-    all_affected_branches_for_grep=$(echo -ne "$all_affected_branches" | tr '\n' '|')
 
-    unknown_to_fluxo_branches=$(
-      echo -ne "$all_affected_branches" |
-      xargs -I {} bash -c "echo {} | grep -v -E \"${fluxo_ordered_branches_for_grep%|}\"" | 
-      xargs -I {} bash -c "echo -ne \"{}\n\""
-    )
-    numberOfUnknownBranches="$(echo -ne "$unknown_to_fluxo_branches" | wc -l | xargs)"
-
-    branches=$(
-      echo -ne "$fluxo_ordered_branches" |
-      xargs -I {} bash -c "echo {} | grep -E \"${all_affected_branches_for_grep%|}\"" | 
-      xargs -I {} bash -c "echo -ne \"{}\n\""
-    )
-    
+    branches="$(filter_branches_in "$fluxo_ordered_branches" "$all_affected_branches")"
     numberOfBranches="$(echo -ne "$branches" | wc -l | xargs)"
 
+    unknown_to_fluxo_branches="$(
+      filter_branches_in "$(show_fluxo --raw --unknown)" "$all_affected_branches"
+    )"
+    numberOfUnknownBranches="$(count "$unknown_to_fluxo_branches")"
+
     not_affected_branches=$(
-      echo -ne "$fluxo_ordered_branches" |
-      xargs -I {} bash -c "echo {} | grep -v -E \"${all_affected_branches_for_grep%|}\"" | 
-      xargs -I {} bash -c "echo -ne \"{}\n\""
+      filter_branches_not_in "$fluxo_ordered_branches" "$all_affected_branches"
     )
-    
     numberOfNotAffectedBranches="$(echo -ne "$not_affected_branches" | wc -l | xargs)"
 
     new_commits_log=$(
