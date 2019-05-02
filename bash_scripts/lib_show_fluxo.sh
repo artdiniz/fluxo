@@ -201,11 +201,11 @@ function show_fluxo {
   
   if [ $raw -eq 1 ]; then
     if [ "$(count "$view")" -gt 0 ]; then
-      echo -e "$view"
+      echo -e "$view" | less -XRF
     fi
   else
     echo
-    echo -e "$view"
+    echo -e "$view" | less -XRF
     echo
   fi
 }
