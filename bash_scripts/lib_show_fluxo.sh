@@ -25,20 +25,47 @@ $(tput bold)SAMPLE COMMANDS$(tput sgr0)
       git fls --format=\"%(objectname)\"
 "
 
-function read_branches_file {
-  local PROJECT_DIR=$(echo `pwd`)
-  local FILE_NAME="_fluxo_branches"
+function read_ignore_branches_file {
+  local FILE_NAME="_fluxo_branches_ignore "
+  local FLUXO_BRANCH_NAME="_fluxo"
+  
+  git show "$FLUXO_BRANCH_NAME":"$FILE_NAME" &> /dev/null
+  local status=$?
 
-	local FILE_PATH="$PROJECT_DIR/$FILE_NAME"
-
-  if [ -e "$PROJECT_DIR/$FILE_NAME" ]; then
-		cat "$FILE_PATH"
+  if [ $status != 0 ]; then
+    exit
   else
-		
-		echo
+    local branches_file_content="$(git show $FLUXO_BRANCH_NAME:$FILE_NAME)"
+    if [ -z "$branches_file_content" ]; then
+      exit
+    else
+      echo -e "$branches_file_content"
+    fi
+  fi
+}
+
+function read_branches_file {
+  local FILE_NAME="_fluxo_branches"
+  local FLUXO_BRANCH_NAME="_fluxo"
+  
+  git show "$FLUXO_BRANCH_NAME":"$FILE_NAME" &> /dev/null
+  local status=$?
+
+  if [ $status != 0 ]; then
+    echo
 		echo "$(view_errorline)$(view_errordot)$(tput bold) No $(tput sgr0 && tput smso) $FILE_NAME $(tput rmso && tput bold) file found. Aborting!$(tput sgr0)"
-		echo "$(view_errorline)$(view_errordot) There must be a file named $(tput smso) $FILE_NAME $(tput sgr0) where all fluxo branches are listed ordered per line"
+		echo "$(view_errorline)$(view_errordot) There must be a file named $(tput smso) $FILE_NAME $(tput sgr0) in a branch $(tput smso) $FLUXO_BRANCH_NAME $(tput sgr0) where all fluxo branches are listed ordered per line"
 		exit 1
+  else
+    local branches_file_content="$(git show $FLUXO_BRANCH_NAME:$FILE_NAME)"
+    if [ -z "$branches_file_content" ]; then
+      echo
+      echo "$(view_errorline)$(view_errordot)$(tput bold) Empty $(tput sgr0 && tput smso) $FILE_NAME $(tput rmso && tput bold) file. Aborting!$(tput sgr0)"
+      echo "$(view_errorline)$(view_errordot) There must be a file named $(tput smso) $FILE_NAME $(tput sgr0) in a branch called $(tput smso) $FLUXO_BRANCH_NAME $(tput sgr0) where all fluxo branches are listed ordered per line"
+      exit 1
+    else
+      echo -e "$branches_file_content"
+    fi
   fi
 }
 

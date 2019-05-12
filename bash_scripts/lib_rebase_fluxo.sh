@@ -76,18 +76,28 @@ function print_usage_and_die {
 }
 
 function print_status_message {
+  local number_of_commits="$(count "$(git log --no-merges --format="%h" $new_commits_branch ^$next_branch)")"
+  local new_commits_log=$(
+    git log --no-merges \
+      --format="– $(tput setaf 6)%h$(tput sgr0)$(tput bold)' by '$(tput sgr0)%aN \(%cr\)%n%n'  Commit message: '%B%n\ " \
+      $new_commits_branch ^$next_branch
+  )
+
+  local new_commits_log_first_line="$(echo -ne "$new_commits_log" | head -n1)"
+  local new_commits_log_rest="$(echo -ne "$new_commits_log" | tail -n +2)"
+
 PRE_CONFIRM_STATUS_MESSAGE="\
-$( tput setaf 6)$( tput smul)$( tput bold)$numberOfCommits commits$(tput sgr0) serão aplicados na branch $(tput setaf 5)$(tput smul)$(tput bold)$next_branch$(tput sgr0) e em todas as branches que vêem depois dela:
+$( tput setaf 6)$( tput smul)$( tput bold)$number_of_commits commits$(tput sgr0) serão aplicados na branch $(tput setaf 5)$(tput smul)$(tput bold)$next_branch$(tput sgr0) e em todas as branches que vêem depois dela:
 
 $(
   echo -ne "$new_commits_log_first_line" | xargs -I {} bash -c 'echo -ne "        {}\n"'
   echo -ne "$new_commits_log_rest" | xargs -I {} bash -c 'echo -ne "        {}\n"'
 )
 
-$( tput setaf 5)$( tput smul)$( tput bold)$(($numberOfBranches+1)) branches$(tput sgr0) serão atualizadas, nessa ordem:
+$( tput setaf 5)$( tput smul)$( tput bold)$(count "$ordered_affected_branches") branches$(tput sgr0) serão atualizadas, nessa ordem:
 
 $(
-  echo -ne "$branches" |
+  echo -ne "$ordered_affected_branches" |
   tr ' ' '\n' |
   xargs -I {} bash -c 'echo -ne "        $(tput setaf 5)$( tput bold)•$(tput sgr0) {}\n"'
 )
@@ -95,7 +105,7 @@ $(
 $(
 if [ "$unknown_to_fluxo_branches" != '' ]; then
 echo -ne "\
-$( tput setaf 3)$( tput smul)$( tput bold)$(($numberOfUnknownBranches+1)) branches$(tput sgr0) desconhecidas não serão atualizadas. 
+$( tput setaf 3)$( tput smul)$( tput bold)$(count "$unknown_to_fluxo_branches") branches$(tput sgr0) desconhecidas não serão atualizadas. 
            Elas não constam no arquivo '_fluxo_branches' e não é possível determinar sua ordem:
 
 $(
@@ -110,7 +120,7 @@ fi
 $(
 if [ "$not_affected_branches" != '' ]; then
 echo -ne "\
-$( tput setaf 3)$( tput smul)$( tput bold)$(($numberOfNotAffectedBranches+1)) branches$(tput sgr0) do fluxo $( tput setaf 3)$( tput smul)$( tput bold)não serão$(tput sgr0) atualizadas. Por análise dos commits, a branch $( tput setaf 3)$( tput smul)$( tput bold)$(tput smul)$next_branch$(tput sgr0) veio depois delas:
+$( tput setaf 3)$( tput smul)$( tput bold)$(count "$not_affected_branches") branches$(tput sgr0) do fluxo $( tput setaf 3)$( tput smul)$( tput bold)não serão$(tput sgr0) atualizadas. Por análise dos commits, a branch $( tput setaf 3)$( tput smul)$( tput bold)$(tput smul)$next_branch$(tput sgr0) veio depois delas:
 
 $(
   echo -ne "$not_affected_branches" |
@@ -153,35 +163,25 @@ function rebase_fluxo {
     # Pass the action through to git-rebase.
     git rebase --$action ||
       exit $? # if it drops to shell again, stop again.
-    branches=`git log --format=%s refs/hidden/octomerge -1`
-    branches=${branches#merging }
-
-    new_commits_branch=$(echo -ne "$branches" | tr ' ' '\n' | head -n1)
-    branches=$(echo -ne "$branches" | tr ' ' '\n' | tail -n +2)
-    next_branch=$(echo -ne "$branches" | head -n1)
+    all_involved_branches=`git log --format=%s refs/hidden/octomerge -1`
+    all_involved_branches="${all_involved_branches#merging }"
     
-    numberOfBranches=$(echo -ne "$branches" | wc -l | xargs)
-    new_commits_log=$(
-      git log --no-merges \
-        --format="– $(tput setaf 6)%h$(tput sgr0)$(tput bold)' by '$(tput sgr0)%aN \(%cr\)%n%n'  Commit message: '%B%n\ " \
-        $new_commits_branch ^$(echo -ne "$branches" | tail -n1)
-    )
-    numberOfCommits=$(git log --no-merges --format="%h" $new_commits_branch ^$next_branch | wc -l | xargs)
+    ordered_affected_branches="$(echo -ne "$all_involved_branches" | tr ' ' '\n' | tail -n +2)"
 
-    new_commits_log_first_line=$(echo -ne "$new_commits_log" | head -n1)
-    new_commits_log_rest=$(echo -ne "$new_commits_log" | tail -n +2)
-  
-
+    new_commits_branch="$(echo -ne "$all_involved_branches" | tr ' ' '\n' | head -n1)"
+    next_branch="$(echo -ne "$ordered_affected_branches" | head -n1)"
+      
     echo
     print_status_message
     echo
     wait_confirmation
 
   else
-    new_commits_branch=$1
-    next_branch=$2
+    new_commits_branch="$1"
+    next_branch="$2"
 
     fluxo_ordered_branches=$(show_fluxo --raw --existent)
+
     fluxo_status=$?
     if [ $fluxo_status != 0 ]; then
       echo -ne "$fluxo_ordered_branches"
@@ -189,31 +189,27 @@ function rebase_fluxo {
       echo
       exit $fluxo_status
     fi
+    
+    unexistent_branches="$(show_fluxo --raw --unexistent)"
+    unexistent_branches_count="$(count "$unexistent_branches")"
 
-    all_affected_branches=$(git br --contains $next_branch --format="%(refname:short)")
+    if [ $unexistent_branches_count -gt 0 ]; then
+      echo -e "$(show_fluxo --unexistent)"
+      echo
+      echo "All branches must exist. Aborting rebase!"
+      echo
+      exit 1
+    fi
 
-    branches="$(filter_branches_in "$fluxo_ordered_branches" "$all_affected_branches")"
-    numberOfBranches="$(echo -ne "$branches" | wc -l | xargs)"
+    all_affected_branches="$(git br --contains "$next_branch" --format="%(refname:short)")"
 
+    ordered_affected_branches="$(filter_branches_in "$fluxo_ordered_branches" "$all_affected_branches")"
     unknown_to_fluxo_branches="$(
       filter_branches_in "$(show_fluxo --raw --unknown)" "$all_affected_branches"
     )"
-    numberOfUnknownBranches="$(count "$unknown_to_fluxo_branches")"
-
     not_affected_branches=$(
       filter_branches_not_in "$fluxo_ordered_branches" "$all_affected_branches"
     )
-    numberOfNotAffectedBranches="$(echo -ne "$not_affected_branches" | wc -l | xargs)"
-
-    new_commits_log=$(
-      git log --no-merges \
-        --format="– $(tput setaf 6)%h$(tput sgr0)$(tput bold)' by '$(tput sgr0)%aN \(%cr\)%n%n'  Commit message: '%B%n\ " \
-        $new_commits_branch ^$(echo -ne "$branches" | tail -n1)
-    )
-    numberOfCommits="$(git log --no-merges --format="%h" $new_commits_branch ^$next_branch | wc -l | xargs)"
-
-    new_commits_log_first_line="$(echo -ne "$new_commits_log" | head -n1)"
-    new_commits_log_rest="$(echo -ne "$new_commits_log" | tail -n +2)"
 
     echo
     print_status_message
@@ -221,15 +217,15 @@ function rebase_fluxo {
     wait_confirmation
 
     if [[ $REPLY =~ ^[Yy]$ ]]; then
-      tree="$(git log -1 --pretty="%T" `git rev-parse $(echo -ne $branches | tr ' ' '\n' | tail -n1)`)"
+      tree="$(git log -1 --pretty="%T" `git rev-parse $(echo -ne $ordered_affected_branches | tr ' ' '\n' | tail -n1)`)"
     
       # tree=$(git cat-file commit $merge_base | head -n1 | cut -c6-)
-      branchesParam="-p `echo $branches | sed -e's/ / -p /g'`"
+      branchesParam="-p `echo $ordered_affected_branches | sed -e's/ / -p /g'`"
 
       # creates a merge commit on top of all other branches.
       # This commit that has a name with all the branches that are being rebased
       octomerge=$(
-        echo 'merging' $new_commits_branch $branches |
+        echo 'merging' $new_commits_branch $ordered_affected_branches |
         git commit-tree $tree $branchesParam
       )
 
@@ -242,7 +238,7 @@ function rebase_fluxo {
     fi
   fi
 
-  branches_list=($branches)
+  branches_list=($ordered_affected_branches)
 
 
   # When rebased is finishe the HEAD of octomerge hidden branch isn't pointing to the rebased one.
@@ -253,7 +249,7 @@ function rebase_fluxo {
   # Creating $commitsDistance array.
   #   Each position has the distance between the top rebased commit from one branch to another
   commitsDistanceString=$(
-    echo -ne "$branches" | 
+    echo -ne "$ordered_affected_branches" | 
     awk '{OFS="";}NR>1{print "git log --no-merges --format=%h " "\\\47"$1"\\\47 ^\\\47"last"\\\47 | wc -l | xargs"} {last=$1}' |
     xargs -I {} bash -c '{}'
   )
