@@ -4,7 +4,7 @@ function filter_branches_in {
 
     local filter_arg_branches_for_grep=$(echo -e "$filter_arg_branches" | tr '\n' '|')
 
-    local branches="$(echo -e "$main_branches" | grep -E "${filter_arg_branches_for_grep%|}")"
+    local branches="$(echo -e "$main_branches" | grep -wE "${filter_arg_branches_for_grep%|}")"
 	echo -e "$branches"
 }
 
@@ -14,7 +14,7 @@ function filter_branches_not_in {
 
     local filter_arg_branches_for_grep=$(echo -e "$filter_arg_branches" | tr '\n' '|')
 
-    local branches="$(echo -e "$main_branches" | grep -v -E "${filter_arg_branches_for_grep%|}")"
+    local branches="$(echo -e "$main_branches" | grep -v -wE "${filter_arg_branches_for_grep%|}")"
 	echo -e "$branches"
 }
 

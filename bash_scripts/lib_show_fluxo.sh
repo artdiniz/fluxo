@@ -81,7 +81,7 @@ function print_fluxo_show_usage {
 
 function render_branches_as_verbose {
 	local branches="$1"
-	echo -e "$branches" | xargs -I {} bash -c "git br -v --color=always | grep --color=never {}"
+	echo -e "$branches" | xargs -I {} bash -c "git br -v --color=always | grep -w --color=never {}"
 }
 
 function render_branches {
