@@ -9,10 +9,31 @@ function printBranchesOrderedByFluxo {
     grep -v "gh-pages" 
 }
 
+function read_fluxo_ignore {
+    local FILE_NAME=".fluxoignore"
+    local FLUXO_BRANCH_NAME="_fluxo"
+    
+    git show "$FLUXO_BRANCH_NAME":"$FILE_NAME" &> /dev/null
+    local status=$?
+
+    if [ $status -eq 0 ]; then
+        local ignore_file_content="$(git show $FLUXO_BRANCH_NAME:$FILE_NAME)"
+        if [ ! -z "$ignore_file_content" ]; then
+            echo -ne "$ignore_file_content"
+        fi
+    fi
+}
+
 function generate_fluxo_diff_files {
     color_setup
 
+    PROJECT_DIR="$(pwd)"
+
     branches="$(show_fluxo --existent --raw)"
+
+    local ignore_files="$(read_fluxo_ignore)"
+
+    local exclude_git_dif_args="$(echo -e "$ignore_files" | xargs -I %% echo "\"':(exclude)$PROJECT_DIR/%%'\"" | tr '\n' ' ')"
 
     status="$?"
     if [ $status != 0 ]; then
@@ -27,7 +48,7 @@ function generate_fluxo_diff_files {
     cd $TMP_FOLDER
 
     printBranchesOrderedByFluxo |
-    awk '{OFS="";}NR>1{print "git diff " "\\\47"last"\\\47..\\\47"$1 "\\\47 >> " "\\\47"$1".diff\\\47" "\n"} {last=$1}' |
+    awk -v exclude_git_dif_args="$exclude_git_dif_args" '{OFS="";}NR>1{print "git diff " "\\\47"last"\\\47..\\\47"$1 "\\\47 " exclude_git_dif_args " >> " "\\\47"$1".diff\\\47" "\n"} {last=$1}' |
     xargs -I diffAndCreateFileCommmand bash -c "diffAndCreateFileCommmand"
 
     numberOfFiles=$(printBranchesOrderedByFluxo | grep -v master | wc -l | xargs)
