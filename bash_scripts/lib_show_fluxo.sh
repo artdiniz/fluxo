@@ -6,7 +6,7 @@ GIT-FLUXOSHOW
 $(tput bold)USAGE$(tput sgr0)
 
   git fluxo show
-  git fluxo show --format=<format-options> | [-v | --verbose]
+  git fluxo show [--existent|--unknown|--unexistent] [--format=<format-options>] [-v | --verbose] [--raw]
 
 $(tput bold)ACTIONS$(tput sgr0)
 
@@ -24,25 +24,6 @@ $(tput bold)SAMPLE COMMANDS$(tput sgr0)
   - Shows list of full hashes for each branch HEAD commit
       git fls --format=\"%(objectname)\"
 "
-
-function read_ignore_branches_file {
-  local FILE_NAME="_fluxo_branches_ignore "
-  local FLUXO_BRANCH_NAME="_fluxo"
-  
-  git show "$FLUXO_BRANCH_NAME":"$FILE_NAME" &> /dev/null
-  local status=$?
-
-  if [ $status != 0 ]; then
-    exit
-  else
-    local branches_file_content="$(git show $FLUXO_BRANCH_NAME:$FILE_NAME)"
-    if [ -z "$branches_file_content" ]; then
-      exit
-    else
-      echo -e "$branches_file_content"
-    fi
-  fi
-}
 
 function read_branches_file {
   local FILE_NAME="_fluxo_branches"
