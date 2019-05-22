@@ -79,9 +79,51 @@ function print_fluxo_show_usage {
   echo -e "\n$FLUXO_SHOW_HELP_MESSAGE\n"
 }
 
-function render_branches_as_verbose {
+function get_branches_details {
 	local branches="$1"
-	echo -e "$branches" | xargs -I {} bash -c "git br -v --color=always | grep -w --color=never {}"
+  local branches_details="$(echo -e "$branches" | xargs -I %% echo 'git br -v | xargs -I [] echo "X=\"[]\" && echo -e \"\${X##\\* }\" | grep -w \"^%%\"" | bash -  | sed "s/^%% //"' | bash -)"
+  echo -e "$branches_details"
+}
+
+function render_formatted_branches {
+  local branches="$1" 
+  local formatted_branches="$2" 
+  local verbose="$3"
+
+  if [ $verbose -eq 0 ]; then
+    echo -e "$formatted_branches"
+  else
+    IFS=$'\n' branches_name_length=($(echo -e "$branches" | xargs -I %% bash -c 'X="%%" && echo -e "${#X}"'))
+
+    local max_branch_name_length=0
+    for i in "${branches_name_length[@]}"; do
+      if [ $i -gt $max_branch_name_length ]; then
+        local max_branch_name_length="$i"
+      fi
+    done
+
+    IFS=$'\n' branches_name_padding=$(
+      echo -e "$branches" | 
+      xargs -I %% bash -c 'X="%%" && echo -e "${#X}"' | 
+      xargs -I %% bash -c "X='%%' && echo \$(($max_branch_name_length - %%))"
+    )
+    # gets branches an concats with formatted branches names
+    local qt_branches="$(count "$branches")"
+    local branches_details="$(get_branches_details "$branches")"
+
+    for i in $(seq 1 "$qt_branches"); do
+
+      echo -ne "$(echo -e "$formatted_branches" | head -n +$i | tail -n1)"
+
+      local padding_spaces=$(echo -e "$branches_name_padding" | head -n +$i | tail -n1)
+      for j in $(seq 1 "$(($padding_spaces + 1))"); do
+        echo -n " "
+      done
+
+      echo -ne "$(echo -e "$branches_details" | head -n +$i | tail -n1)"
+      echo
+    done
+  fi
 }
 
 function render_branches {
@@ -102,7 +144,7 @@ function render_branches {
 
 	if [ "$number_of_branches" -gt 0 ]; then
     if [ $raw -eq 1 ]; then
-      echo "$formatted_branches"
+      echo -e "$(render_formatted_branches "$branches" "$formatted_branches" "$verbose")"
     else
       local digits="${#number_of_branches}"
 
@@ -114,7 +156,8 @@ function render_branches {
       [ "$number_of_branches" -eq 1 ] && local pluralized_branch_word="branch" || local pluralized_branch_word="branches"
       echo "$(tput smul)$(tput bold)$color$number_of_branches $branches_title$(tput rmul) $pluralized_branch_word$(tput sgr0)"
       echo
-      [ $verbose -eq 1 ] && render_branches_as_verbose "$branches" || echo -e "$counted_and_formatted_branches"
+
+      echo -e "$(render_formatted_branches "$branches" "$counted_and_formatted_branches" "$verbose")"
     fi
 	fi
 }
@@ -140,9 +183,8 @@ function show_fluxo {
       exit $?
     ;;
     -v|--verbose)
-      local format="%(refname:short)"
       local verbose=1
-      break
+      shift
     ;;
     --format*)
       local format="${1##--format}"
