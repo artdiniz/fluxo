@@ -10,7 +10,7 @@ function printBranchesOrderedByFluxo {
 }
 
 function read_fluxo_ignore {
-    local FILE_NAME=".fluxoignore"
+    local FILE_NAME="_fluxo_ignore"
     local FLUXO_BRANCH_NAME="_fluxo"
     
     git show "$FLUXO_BRANCH_NAME":"$FILE_NAME" &> /dev/null
