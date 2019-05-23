@@ -44,7 +44,7 @@ show)
     ;;
 diff)
     shift
-    generate_fluxo_diff_files
+    generate_fluxo_diff_files "$@"
     ;;
 rebase)
     shift
