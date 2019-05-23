@@ -9,8 +9,8 @@ function printBranchesOrderedByFluxo {
     grep -v "gh-pages" 
 }
 
-function read_fluxo_ignore {
-    local FILE_NAME="_fluxo_ignore"
+function read_fluxo_file {
+    local FILE_NAME="$1"
     local FLUXO_BRANCH_NAME="_fluxo"
     
     git show "$FLUXO_BRANCH_NAME":"$FILE_NAME" &> /dev/null
@@ -44,7 +44,11 @@ function generate_fluxo_diff_files {
         exit $status
     fi
 
-    local exclude_git_diff_args="$(read_fluxo_ignore | xargs -I %% echo "':(exclude)$project_dir/%%'" | tr '\n' ' ')"
+    local exclude_ignored_diff_args="$(read_fluxo_file "_fluxo_ignore" | xargs -I %% echo "':(exclude)$project_dir/%%'" | tr '\n' ' ')"
+
+    local change_only_files=$(read_fluxo_file "_fluxo_arquivos_prontos")
+    local change_only_files_diff_arg="$(echo -e "$change_only_files" | xargs -I %% echo "%%" | tr '\n' ' ')"
+    local exclude_change_only_files_diff_arg="$(echo -e "$change_only_files" | xargs -I %% echo "':(exclude)$project_dir/%%'" | tr '\n' ' ')"
 
     IFS=$'\n' branches_array=($(printBranchesOrderedByFluxo))
 
@@ -55,8 +59,28 @@ function generate_fluxo_diff_files {
         local current_branch="${branches_array[i]}"
         local previous_branch="${branches_array[i-1]}"
 
-        echo "git diff '$previous_branch'..'$current_branch' $exclude_git_diff_args >> '$tmp_folder/$(printf %0"$digits"d $i)-$current_branch.diff'"
-    done | bash -
+        local diff_file_name="$tmp_folder/$(printf %0"$digits"d $i)-$current_branch.diff"
+
+        local main_diff_command="git diff --minimal '$previous_branch'..'$current_branch' -- $exclude_ignored_diff_args $exclude_change_only_files_diff_arg"
+        local change_only_files_diff_command="git diff --diff-filter=M --minimal '$previous_branch'..'$current_branch' -- $change_only_files_diff_arg"
+        local change_only_files_add_remove_diff_command="git diff --diff-filter=ADR --name-status --minimal '$previous_branch'..'$current_branch' -- $change_only_files_diff_arg"
+
+        local main_diff="$(bash -c "$main_diff_command")"
+        local change_only_files_diff="$(bash -c "$change_only_files_diff_command")"
+        local change_only_files_add_remove_diff="$(bash -c "$change_only_files_add_remove_diff_command")"
+
+
+        echo -e "$main_diff" 2>> /dev/null 1>> "$diff_file_name"
+
+        if [ ! -z "$change_only_files_diff" ]; then
+            echo -e "\\n$change_only_files_diff" 2>> /dev/null 1>> "$diff_file_name"
+        fi
+
+        if [ ! -z "$change_only_files_add_remove_diff" ]; then
+            echo -e "\\ndiff --fluxo arquivos_curso_add_or_remove" 2>> /dev/null 1>> "$diff_file_name"
+            echo -e "$change_only_files_add_remove_diff" 2>> /dev/null 1>> "$diff_file_name"
+        fi
+    done
 
     rm -r "$dest_folder" 2> /dev/null
     mkdir -p $dest_folder
