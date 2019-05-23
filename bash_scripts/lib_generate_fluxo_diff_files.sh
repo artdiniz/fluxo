@@ -27,13 +27,16 @@ function read_fluxo_ignore {
 function generate_fluxo_diff_files {
     color_setup
 
-    PROJECT_DIR="$(pwd)"
+    [ -z "$1" ] && local dest_folder="_fluxo_diff_files" || local dest_folder=$1
+    local project_dir="$(pwd)"
+    
+    local tmp_folder=$(mktemp -d)
+    function remove_tmp_folder {
+        rm -rf "$1"
+    }
+    trap "remove_tmp_folder $tmp_folder" EXIT
 
     branches="$(show_fluxo --existent --raw)"
-
-    local ignore_files="$(read_fluxo_ignore)"
-
-    local exclude_git_dif_args="$(echo -e "$ignore_files" | xargs -I %% echo "\"':(exclude)$PROJECT_DIR/%%'\"" | tr '\n' ' ')"
 
     status="$?"
     if [ $status != 0 ]; then
@@ -41,37 +44,28 @@ function generate_fluxo_diff_files {
         exit $status
     fi
 
-    TMP_FOLDER=mktemp
+    local exclude_git_diff_args="$(read_fluxo_ignore | xargs -I %% echo "':(exclude)$project_dir/%%'" | tr '\n' ' ')"
 
-    rm -r "$TMP_FOLDER" 2> /dev/null
-    mkdir -p "$TMP_FOLDER"
-    cd $TMP_FOLDER
+    IFS=$'\n' branches_array=($(printBranchesOrderedByFluxo))
 
-    printBranchesOrderedByFluxo |
-    awk -v exclude_git_dif_args="$exclude_git_dif_args" '{OFS="";}NR>1{print "git diff " "\\\47"last"\\\47..\\\47"$1 "\\\47 " exclude_git_dif_args " >> " "\\\47"$1".diff\\\47" "\n"} {last=$1}' |
-    xargs -I diffAndCreateFileCommmand bash -c "diffAndCreateFileCommmand"
+    local qt_files=$(( ${#branches_array[@]} - 1 ))
+    local digits="${#qt_files}"
 
-    numberOfFiles=$(printBranchesOrderedByFluxo | grep -v master | wc -l | xargs)
-    digits="${#numberOfFiles}"
+    for ((i=1; i<${#branches_array[@]}; i++)); do
+        local current_branch="${branches_array[i]}"
+        local previous_branch="${branches_array[i-1]}"
 
-    printBranchesOrderedByFluxo |
-    grep -v master |
-    awk -v digits="$digits" '{print $1".diff"," ",sprintf("%0"digits"d",NR-1)"-"$1".diff"}' |
-    xargs -L1 mv 
+        echo "git diff '$previous_branch'..'$current_branch' $exclude_git_diff_args >> '$tmp_folder/$(printf %0"$digits"d $i)-$current_branch.diff'"
+    done | bash -
 
-    cd -
-
-    [ -z "$1" ] && DEST_FOLDER="_fluxo_diff_files" || DEST_FOLDER=$1
-
-    rm -r "$DEST_FOLDER" 2> /dev/null
-    mkdir -p $DEST_FOLDER
-    mv $TMP_FOLDER/* $DEST_FOLDER
-    rm -r $TMP_FOLDER
+    rm -r "$dest_folder" 2> /dev/null
+    mkdir -p $dest_folder
+    mv $tmp_folder/* $dest_folder
 
     echo
-    echo -e "Created $(style $BOLD$PURPLE $numberOfFiles) diff files in $(style $UNDERLINE$CYAN `pwd $DEST_FOLDER`/$DEST_FOLDER/)"
+    echo -e "Created $(style $BOLD$PURPLE $qt_files) diff files in $(style $UNDERLINE$CYAN `pwd $dest_folder`/$dest_folder/)"
     echo
 
-    ls $DEST_FOLDER | xargs -I {} bash -c "echo -ne \"    $(style $GREEN "•") $(style $GREY {})\n\""
+    ls $dest_folder | xargs -I {} bash -c "echo -ne \"    $(style $GREEN "•") $(style $GREY {})\n\""
     echo
 }
