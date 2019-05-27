@@ -45,7 +45,7 @@ function generate_fluxo_diff_files {
     fi
 
     local ignored_files="$(read_fluxo_file "_fluxo_ignore")"
-    local change_only_files=$(read_fluxo_file "_fluxo_arquivos_prontos")
+    local change_only_files=$(read_fluxo_file "_fluxo_change_only")
     
     local exclude_ignored_diff_args="$(echo -e "$ignored_files" | xargs -I %% echo "':(exclude)$project_dir/%%'" | tr '\n' ' ')"
     local exclude_change_only_files_diff_arg="$(echo -e "$change_only_files" | xargs -I %% echo "':(exclude)$project_dir/%%'" | tr '\n' ' ')"
@@ -80,7 +80,7 @@ function generate_fluxo_diff_files {
             fi
 
             if [ ! -z "$change_only_files_add_remove_diff" ]; then
-                echo -e "\\ndiff --fluxo arquivos_curso_add_or_remove" 2>> /dev/null 1>> "$diff_file_name"
+                echo -e "\\ndiff --fluxo change_only_files_add_or_remove" 2>> /dev/null 1>> "$diff_file_name"
                 echo -e "$change_only_files_add_remove_diff" 2>> /dev/null 1>> "$diff_file_name"
             fi
         fi
