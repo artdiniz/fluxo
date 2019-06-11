@@ -80,7 +80,7 @@ function generate_fluxo_diff_files {
             fi
 
             if [ ! -z "$change_only_files_add_remove_diff" ]; then
-                echo -e "\\ndiff --fluxo change_only_files_add_or_remove" 2>> /dev/null 1>> "$diff_file_name"
+                echo -e "diff --fluxo a/change_only_files b/change_only_files" 2>> /dev/null 1>> "$diff_file_name"
                 echo -e "$change_only_files_add_remove_diff" 2>> /dev/null 1>> "$diff_file_name"
             fi
         fi
