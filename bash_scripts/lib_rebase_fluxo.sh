@@ -219,7 +219,6 @@ function rebase_fluxo {
     if [[ $REPLY =~ ^[Yy]$ ]]; then
       tree="$(git log -1 --pretty="%T" `git rev-parse $(echo -ne $ordered_affected_branches | tr ' ' '\n' | tail -n1)`)"
     
-      # tree=$(git cat-file commit $merge_base | head -n1 | cut -c6-)
       branchesParam="-p `echo $ordered_affected_branches | sed -e's/ / -p /g'`"
 
       # creates a merge commit on top of all other branches.
