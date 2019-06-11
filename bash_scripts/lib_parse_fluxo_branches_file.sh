@@ -20,7 +20,7 @@ function filter_branches_not_in {
 
 function get_unknown_branches {
   local fluxo_branches_from_file="$1"
-  local all_branches=$(git br --format="%(refname:short)")
+  local all_branches=$(git br --sort="committerdate" --format="%(refname:short)")
 
   echo -e "$(filter_branches_not_in "$all_branches" "$fluxo_branches_from_file")"
 }
