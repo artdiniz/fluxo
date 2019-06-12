@@ -26,6 +26,7 @@ $(tput bold)FLUXO COMMANDS$(tput sgr0)
 . $(cd "$(dirname "$0")" && pwd)"/lib_show_fluxo.sh"
 . $(cd "$(dirname "$0")" && pwd)"/lib_generate_fluxo_diff_files.sh"
 . $(cd "$(dirname "$0")" && pwd)"/lib_rebase_fluxo.sh"
+. $(cd "$(dirname "$0")" && pwd)"/lib_fluxo_doctor.sh"
 
 function fluxo_print_usage {
     echo -ne "\n$FLUXO_HELP_MESSAGE\n"
@@ -49,6 +50,10 @@ diff)
 rebase)
     shift
     rebase_fluxo "$@"
+    ;;
+doctor)
+    shift
+    fluxo_doctor "$@"
     ;;
 *)
     fluxo_print_usage
