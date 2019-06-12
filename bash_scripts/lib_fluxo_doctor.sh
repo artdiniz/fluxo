@@ -17,7 +17,6 @@ function fluxo_doctor {
         if [ $number_of_commits -gt 0 ]; then
             (( branches_sync_status++ ))
 
-            echo "$( tput setaf 6)$( tput smul)$( tput bold)$number_of_commits commits$(tput sgr0) da branch $(tput setaf 5)$(tput smul)$(tput bold)$previous_branch$(tput sgr0) não existem na branch $(tput setaf 5)$(tput smul)$(tput bold)$branch$(tput sgr0)"
             local new_commits_log=$(
             git log --no-merges \
                 --format="– $(tput setaf 6)%h$(tput sgr0)$(tput bold)' by '$(tput sgr0)%aN \(%cr\)%n%n'  Commit message: '%B%n\ " \
@@ -26,7 +25,10 @@ function fluxo_doctor {
 
             local new_commits_log_first_line="$(echo -ne "$new_commits_log" | head -n1)"
             local new_commits_log_rest="$(echo -ne "$new_commits_log" | tail -n +2)"
-
+            
+            echo
+            echo "$( tput setaf 6)$( tput smul)$( tput bold)$number_of_commits commits$(tput sgr0) da branch $(tput setaf 5)$(tput smul)$(tput bold)$previous_branch$(tput sgr0) não existem na branch $(tput setaf 5)$(tput smul)$(tput bold)$branch$(tput sgr0)"
+            echo
             echo -ne "$new_commits_log_first_line" | xargs -I {} bash -c 'echo -ne "        {}\n"'
             echo -ne "$new_commits_log_rest" | xargs -I {} bash -c 'echo -ne "        {}\n"'
             
