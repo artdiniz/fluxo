@@ -14,9 +14,10 @@ $(tput bold)ACTIONS$(tput sgr0)
 
 $(tput bold)FLUXO COMMANDS$(tput sgr0)
 
-  <show>           Show branches orderes by fluxo
-  <diff>           Generate code diff files for each fluxo step
-  <rebase>         Rebase after changing any fluxo previous steps
+  <show | s>           Show branches orderes by fluxo
+  <diff | d>           Generate code diff files for each fluxo step
+  <rebase | r>         Rebase after changing any fluxo previous steps
+  <doctor | dr>        Check fluxo health (Are steps synchronized?)
 "
 
 . $(cd "$(dirname "$0")" && pwd)"/lib_util.sh"
@@ -39,19 +40,19 @@ case "$1" in
     fluxo_print_usage | less -RF
     exit $?
     ;;
-show)
+show|s)
     shift
     show_fluxo "$@"
     ;;
-diff)
+diff|d)
     shift
     generate_fluxo_diff_files "$@"
     ;;
-rebase)
+rebase|r)
     shift
     rebase_fluxo "$@"
     ;;
-doctor)
+doctor|dr)
     shift
     fluxo_doctor "$@"
     ;;
