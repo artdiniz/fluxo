@@ -61,7 +61,11 @@ function wait_confirmation {
   echo
 
   if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+    echo
     echo 'Rebase cancelado! Você escolheu não continuar.'
+    if [ ! -z "$1" ]; then
+      bash -c "$1"
+    fi
     exit
   fi
 }
@@ -289,6 +293,11 @@ function rebase_fluxo {
   IFS=$'\n'; new_commit_list=($new_commit_list); unset IFS;
 
   rebased_length=${#new_commit_list[@]}
+  rebase_integrity_status=0
+
+  echo "Verificação de integridade dos rebases:"
+  echo
+
   for (( index=$rebased_length ; index>0 ; index-- )) ; do
     local branch=${branches_list[rebased_length - index]}
     local old_branch_head_hash="$(git rev-parse --short $branch)"
@@ -298,17 +307,32 @@ function rebase_fluxo {
     local new_branch_head_commit_message_first_line="$(git show --format="%B" ${new_commit_list[index - 1]} | head -n1)"
 
 
+    if [ "$old_branch_head_commit_message_first_line" != "$new_branch_head_commit_message_first_line" ]; then    
+      (( rebase_integrity_status++ ))
+      local status_message="$(tput setaf 1)x"
+    else
+      local status_message="$(tput setaf 2)✔︎"
+    fi
+
     echo
-    echo "Pronta para rebasear: $branch"
+    echo "$status_message $(tput setaf 6)$branch$(tput sgr0)"
     echo "    De:    $old_branch_head_hash – $old_branch_head_commit_message_first_line"
     echo "    Para:  $new_branch_head_hash – $new_branch_head_commit_message_first_line"
     echo
   done
 
+  if [ $rebase_integrity_status -gt 0 ]; then
+    echo "❌ ✋ Integridade do rebase comprometida. O rebase foi cancelado"
+    echo
+    echo "Voltando para branch $new_commits_branch"
+    git co $new_commits_branch &>/dev/null
+    exit 1
+  fi
+
+  echo "✅ 👍 Aparentemente tudo certo para o rebase."
+  echo "Verifique se as mensagens de commit acima batem uma com a outra."
   echo
-  echo "Verifique se as mensagens de commit acima batem uma com a outra"
-  echo
-  wait_confirmation "git co $new_commits_branch"
+  wait_confirmation "echo -e 'Voltando para branch $new_commits_branch\n' && git co $new_commits_branch &>/dev/null"
   echo
 
   for (( index=$rebased_length ; index>0 ; index-- )) ; do
