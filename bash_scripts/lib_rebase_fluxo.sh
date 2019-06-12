@@ -237,6 +237,10 @@ function rebase_fluxo {
     fi
   fi
 
+  clear
+  echo
+  echo "Seguindo sem conflitos de rebase!"
+
   branches_list=($ordered_affected_branches)
 
 
@@ -282,18 +286,42 @@ function rebase_fluxo {
     xargs -I {} bash -c "git log --topo-order --format='%H' | head -n +{} | tail -n1"
   )
 
-  IFS=$'\n'; fodac=($new_commit_list); unset IFS;
+  IFS=$'\n'; new_commit_list=($new_commit_list); unset IFS;
 
-  rebased_length=${#fodac[@]}
+  rebased_length=${#new_commit_list[@]}
   for (( index=$rebased_length ; index>0 ; index-- )) ; do
-    branch=${branches_list[rebased_length - index]}
-    echo
-    echo "moving $branch (was $(git rev-parse --short $branch))"
-    echo "$(git rev-parse --short $branch) -> $(git show --format=%h ${fodac[index - 1]} | head -n1) – $(git show --format="%B" ${fodac[index - 1]} | head -n1)"
-    echo
+    local branch=${branches_list[rebased_length - index]}
+    local old_branch_head_hash="$(git rev-parse --short $branch)"
+    local old_branch_head_commit_message_first_line="$(git show --format="%B" $branch | head -n1)"
 
-    git br -f $branch $(git show --format=%H ${fodac[index - 1]} | head -n1)
+    local new_branch_head_hash="$(git show --format=%h ${new_commit_list[index - 1]} | head -n1)"
+    local new_branch_head_commit_message_first_line="$(git show --format="%B" ${new_commit_list[index - 1]} | head -n1)"
+
+
+    echo
+    echo "Pronta para rebasear: $branch"
+    echo "    De:    $old_branch_head_hash – $old_branch_head_commit_message_first_line"
+    echo "    Para:  $new_branch_head_hash – $new_branch_head_commit_message_first_line"
+    echo
   done
+
+  echo
+  echo "Verifique se as mensagens de commit acima batem uma com a outra"
+  echo
+  wait_confirmation "git co $new_commits_branch"
+  echo
+
+  for (( index=$rebased_length ; index>0 ; index-- )) ; do
+    local branch=${branches_list[rebased_length - index]}
+
+    local old_branch_head_hash="$(git rev-parse --short $branch)"
+    local new_branch_head_hash="$(git show --format=%h ${new_commit_list[index - 1]} | head -n1)"
+    local new_branch_head_full_hash="$(git show --format=%H ${new_commit_list[index - 1]} | head -n1)"
+    
+    git br -f $branch $new_branch_head_full_hash
+    echo "Rebased $branch | $old_branch_head_hash -> $new_branch_head_hash"
+  done
+
   git checkout -q ${branches_list[0]}
   git update-ref -d refs/hidden/octomerge
 
