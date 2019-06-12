@@ -44,6 +44,7 @@ function generate_fluxo_diff_files {
         exit $status
     fi
 
+    local root_dir="$(read_fluxo_file "_fluxo_root")"
     local ignored_files="$(read_fluxo_file "_fluxo_ignore")"
     local change_only_files=$(read_fluxo_file "_fluxo_change_only")
     
@@ -61,7 +62,19 @@ function generate_fluxo_diff_files {
         local current_branch="${branches_array[i]}"
         local previous_branch="${branches_array[i-1]}"
 
-        local main_diff_command="git diff -U1000 --minimal '$previous_branch'..'$current_branch' -- $exclude_ignored_diff_args $exclude_change_only_files_diff_arg"
+        if [ ! -z "$root_dir" ]; then
+            git show "$current_branch":"$root_dir" &>/dev/null && git show "$previous_branch":"$root_dir" &>/dev/null
+            local status=$?
+
+            if [ $status -eq 0 ]; then
+                local relative_dir_diff_arg="--relative='$root_dir'"
+            else
+                echo -e "Pasta raíz '$root_dir' foi definida no arquivo _fluxo_root, porém ela não existe nas branches $current_branch ou $previous_branch"
+                exit 1 
+            fi
+        fi
+
+        local main_diff_command="git diff ${relative_dir_diff_arg} -U1000 --minimal '$previous_branch'..'$current_branch' -- $exclude_ignored_diff_args $exclude_change_only_files_diff_arg"
         local main_diff="$(bash -c "$main_diff_command")"
 
         local diff_file_name="$tmp_folder/$(printf %0"$digits"d $i)-$current_branch.diff"
@@ -69,8 +82,8 @@ function generate_fluxo_diff_files {
         echo -e "$main_diff" 2>> /dev/null 1>> "$diff_file_name"
 
         if [ ! -z "$change_only_files" ]; then
-            local change_only_files_diff_command="git diff -U1000 -M --diff-filter=MR --minimal '$previous_branch'..'$current_branch' -- $include_change_only_files_diff_arg"
-            local change_only_files_add_remove_diff_command="git diff  --diff-filter=AD --name-status --minimal '$previous_branch'..'$current_branch' -- $include_change_only_files_diff_arg"
+            local change_only_files_diff_command="git diff ${relative_dir_diff_arg} -U1000 -M --diff-filter=MR --minimal '$previous_branch'..'$current_branch' -- $include_change_only_files_diff_arg"
+            local change_only_files_add_remove_diff_command="git diff  ${relative_dir_diff_arg} --diff-filter=AD --name-status --minimal '$previous_branch'..'$current_branch' -- $include_change_only_files_diff_arg"
             
             local change_only_files_diff="$(bash -c "$change_only_files_diff_command")"
             local change_only_files_add_remove_diff="$(bash -c "$change_only_files_add_remove_diff_command")"
