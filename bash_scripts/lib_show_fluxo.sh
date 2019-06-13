@@ -278,9 +278,11 @@ function show_fluxo {
 
     IFS=$'\n'; known_branches=($known_branches); unset IFS;
 
-    local drafts_by_branch_inverted="$(
+    local drafts_view="$(
       local all_drafts=""
       local known_branches_length=${#known_branches[@]}
+      local drafts_view_inverted=""
+
       for (( index=$known_branches_length ; index>0 ; index-- )) ; do
         local fluxo_branch="${known_branches[index - 1]}"
         local fluxo_branch_children="$(git br --format="%(refname:short)" --contains $fluxo_branch)"
@@ -298,13 +300,16 @@ function show_fluxo {
         local inverted_view="$(echo "$view" | tail -r)"
 
         if [ ! -z "$ordered_draft_branches" ]; then
-          echo -e "$inverted_view"
-          echo
+          drafts_view_inverted+="\n$inverted_view\n"
+          if [ "$from_branch_arg" == "$fluxo_branch" ]; then
+            drafts_view_inverted="\n$inverted_view\n"
+            break
+          fi
         fi
       done
-    )"
 
-    local drafts_view="$(echo -e "$drafts_by_branch_inverted" | tail -r)"
+      echo -e "${drafts_view_inverted%%\\n}" | tail -r
+    )"
   fi
 
   local view="$(view_join "$unexistent_view" "$existent_view" "$unknown_to_fluxo_view" "$drafts_view")"
