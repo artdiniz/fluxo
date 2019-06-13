@@ -6,15 +6,15 @@ GIT-FLUXOSHOW
 $(tput bold)USAGE$(tput sgr0)
 
   git fluxo show
-  git fluxo show [--existent|--unknown|--unexistent] [--format=<format-options>] [-v | --verbose] [--raw]
+  git fluxo show [--existent|--unknown|--unexistent|--drafts] [--format=<format-options>] [-v | --verbose] [--raw]
 
 $(tput bold)ACTIONS$(tput sgr0)
 
-  --help                                   show detailed instructions
-  --format=<format-options>                <format-options> pattern passed to \`git for-each-ref\`;
-  -v|--verbose                             show info about remotes and unknown branches (branches that are not in fluxo);
-  --existent|--unknown|--unexistent        choose which kind of fluxo branches to show. Default is showing all of them;
-  --raw                                    remove all titles and decoration from output. Perfect for piping and processing in ohter programs;
+  --help                                       show detailed instructions
+  --format=<format-options>                    <format-options> pattern passed to \`git for-each-ref\`;
+  -v|--verbose                                 show info about remotes and unknown branches (branches that are not in fluxo);
+  --existent|--unknown|--unexistent|--drafts   choose which kind of fluxo branches to show. Default is showing all of them;
+  --raw                                        remove all titles and decoration from output. Perfect for piping and processing in ohter programs;
 
 $(tput bold)SAMPLE COMMANDS$(tput sgr0)
 
@@ -107,8 +107,8 @@ function render_formatted_branches {
   fi
 }
 
-function render_branches {
-  local branches_title="$1"
+function render_branches_with_title {
+  local title="$1"
   local branches="$2"
   local format="$3"
   local verbose="$4"
@@ -134,13 +134,28 @@ function render_branches {
         awk -F'\n' -v color="$color" -v color_reset="$(tput sgr0)" -v digits="$digits" '{gsub("#color", color, $1); gsub("#rcolor", color_reset, $1); gsub("#dd", sprintf("%0"digits"d",NR-1) , $1); print $1}'
       )"
 
-      [ "$number_of_branches" -eq 1 ] && local pluralized_branch_word="branch" || local pluralized_branch_word="branches"
-      echo "$(tput smul)$(tput bold)$color$number_of_branches $branches_title$(tput rmul) $pluralized_branch_word$(tput sgr0)"
+      echo "$title"
       echo
 
       echo -e "$(render_formatted_branches "$branches" "$counted_and_formatted_branches" "$verbose")"
     fi
 	fi
+}
+
+function render_branches {
+  local branches_title="$1"
+  local branches="$2"
+  local format="$3"
+  local verbose="$4"
+  local raw="$5"
+
+  [ -x $6 ] && local color="$(tput setaf 6)" || local color="$6"
+
+  local number_of_branches="$(count "$branches")"
+  [ "$number_of_branches" -eq 1 ] && local pluralized_branch_word="branch" || local pluralized_branch_word="branches"
+  local title="$(tput smul)$(tput bold)$color$number_of_branches $branches_title$(tput rmul) $pluralized_branch_word$(tput sgr0)"
+
+  render_branches_with_title "$title" "$branches" "$format" "$verbose" "$raw" "$color"
 }
 
 function show_fluxo {
@@ -183,14 +198,23 @@ function show_fluxo {
       fi
       shift
     ;;
-    --existent|--unknown|--unexistent)
+    --existent|--unknown|--unexistent|--drafts)
       [ ${1##--} == 'existent' ] && local type="ex"
       [ ${1##--} == 'unknown' ] && local type="unk"
       [ ${1##--} == 'unexistent' ] && local type="unx"
+      [ ${1##--} == 'drafts' ] && local type="dft"
+
+      
+      
 
       local show_types="${type##--} $show_types"
 
       shift
+
+      if [ "${1##--}" == "$1" ]; then
+        local from_branch_arg="$1"
+        shift
+      fi
     ;;
     --raw)
       local raw=1
@@ -210,6 +234,7 @@ function show_fluxo {
   local show_existent="$(has "$show_types" ex)"
   local show_unknow="$(has "$show_types" unk)"
   local show_unexistent="$(has "$show_types" unx)"
+  local show_drafts="$(has "$show_types" dft)"
 
 	fluxo_branches_from_file="$(read_branches_file)"
 	if [ $? != 0 ]; then 
@@ -247,7 +272,42 @@ function show_fluxo {
     local unknown_to_fluxo_view="$(render_branches "unknown" "$unknown_to_fluxo_branches" "$format" "$verbose" "$raw" "$(tput setaf 5)")"
   fi
 
-  local view="$(view_join "$unexistent_view" "$existent_view" "$unknown_to_fluxo_view")"
+  if [ $show_drafts -eq 1 ]; then
+    local known_branches="$(get_existent_fluxo_branches "$fluxo_branches_from_file")"
+    local unknown_to_fluxo_branches="$(get_unknown_branches "$fluxo_branches_from_file")"
+
+    IFS=$'\n'; known_branches=($known_branches); unset IFS;
+
+    local drafts_by_branch_inverted="$(
+      local all_drafts=""
+      local known_branches_length=${#known_branches[@]}
+      for (( index=$known_branches_length ; index>0 ; index-- )) ; do
+        local fluxo_branch="${known_branches[index - 1]}"
+        local fluxo_branch_children="$(git br --format="%(refname:short)" --contains $fluxo_branch)"
+
+        local ordered_draft_branches="$(filter_branches_in "$unknown_to_fluxo_branches" "$fluxo_branch_children")"
+        
+        all_drafts+="$(echo -e "$ordered_draft_branches")"
+        unknown_to_fluxo_branches=$(filter_branches_not_in "$unknown_to_fluxo_branches" "$all_drafts")
+
+        local number_of_branches="$(count "$ordered_draft_branches")"
+        [ "$number_of_branches" -eq 1 ] && local pluralized_branch_word="branch" || local pluralized_branch_word="branches"
+        local draft_title="$(tput smul)$(tput bold)$(tput setaf 5)$number_of_branches draft $pluralized_branch_word$(tput rmul)$(tput sgr0) from $(tput setaf 5)$fluxo_branch$(tput sgr0)"
+
+        local view="$(render_branches_with_title "$draft_title" "$ordered_draft_branches" "$format" "$verbose" "$raw" "$(tput setaf 6)")"
+        local inverted_view="$(echo "$view" | tail -r)"
+
+        if [ ! -z "$ordered_draft_branches" ]; then
+          echo -e "$inverted_view"
+          echo
+        fi
+      done
+    )"
+
+    local drafts_view="$(echo -e "$drafts_by_branch_inverted" | tail -r)"
+  fi
+
+  local view="$(view_join "$unexistent_view" "$existent_view" "$unknown_to_fluxo_view" "$drafts_view")"
   
   if [ $raw -eq 1 ]; then
     if [ "$(count "$view")" -gt 0 ]; then
