@@ -204,9 +204,6 @@ function show_fluxo {
       [ ${1##--} == 'unexistent' ] && local type="unx"
       [ ${1##--} == 'drafts' ] && local type="dft"
 
-      
-      
-
       local show_types="${type##--} $show_types"
 
       shift
@@ -289,22 +286,25 @@ function show_fluxo {
 
         local ordered_draft_branches="$(filter_branches_in "$unknown_to_fluxo_branches" "$fluxo_branch_children")"
         
-        all_drafts+="$(echo -e "$ordered_draft_branches")"
-        unknown_to_fluxo_branches=$(filter_branches_not_in "$unknown_to_fluxo_branches" "$all_drafts")
-
-        local number_of_branches="$(count "$ordered_draft_branches")"
-        [ "$number_of_branches" -eq 1 ] && local pluralized_branch_word="branch" || local pluralized_branch_word="branches"
-        local draft_title="$(tput smul)$(tput bold)$(tput setaf 5)$number_of_branches draft $pluralized_branch_word$(tput rmul)$(tput sgr0) from $(tput setaf 5)$fluxo_branch$(tput sgr0)"
-
-        local view="$(render_branches_with_title "$draft_title" "$ordered_draft_branches" "$format" "$verbose" "$raw" "$(tput setaf 6)")"
-        local inverted_view="$(echo "$view" | tail -r)"
-
         if [ ! -z "$ordered_draft_branches" ]; then
+          all_drafts+="$(echo -e "$ordered_draft_branches")"
+          unknown_to_fluxo_branches=$(filter_branches_not_in "$unknown_to_fluxo_branches" "$all_drafts")
+
+          local number_of_branches="$(count "$ordered_draft_branches")"
+          [ "$number_of_branches" -eq 1 ] && local pluralized_branch_word="branch" || local pluralized_branch_word="branches"
+          local draft_title="$(tput bold)$(tput setaf 5)$fluxo_branch$(tput sgr0)\033[38;5;242m – $number_of_branches draft $pluralized_branch_word $(tput sgr0)"
+
+          local view="$(render_branches_with_title "$draft_title" "$ordered_draft_branches" "$format" "$verbose" "$raw" "$(tput setaf 6)")"
+          local inverted_view="$(echo "$view" | tail -r)"
+
           drafts_view_inverted+="\n$inverted_view\n"
           if [ "$from_branch_arg" == "$fluxo_branch" ]; then
             drafts_view_inverted="\n$inverted_view\n"
             break
           fi
+        elif [ "$from_branch_arg" == "$fluxo_branch" ]; then
+          [ $raw -eq 1 ] && drafts_view_inverted="" || drafts_view_inverted="No drafts from $fluxo_branch"
+          break
         fi
       done
 
