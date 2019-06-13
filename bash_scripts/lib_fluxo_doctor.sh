@@ -1,6 +1,40 @@
 #!/bin/bash
 
-function fluxo_doctor {
+. $(cd "$(dirname "$0")" && pwd)"/lib_style.sh"
+
+function analyze {
+    local function_name="$1"
+    local success_message="$2"
+    local failed_message="$3"
+
+    local run_result_view="$($function_name)"
+    ($function_name &>/dev/null)
+
+    local status=$?
+    if [ $status -gt 0 ]; then
+        (( error_count++ ))
+        echo -e "$failed_message"
+    else
+        echo -e "$success_message"
+    fi
+
+    if [ ! -z "$run_result_view" ]; then
+        echo -e "$run_result_view" | sed 's/^/    /'
+    fi
+}
+
+function unexistent_branches {
+    local unexistent_branches="$(show_fluxo --raw --unexistent)"
+
+    if [ ! -z "$unexistent_branches" ]; then
+        echo -e "$(show_fluxo --unexistent --format="    • %(refname:short)")"
+        exit 1
+    else
+        exit 0
+    fi
+}
+
+function branches_commits_sync_status {
     local known_branches="$(show_fluxo --raw --existent | grep -v '_fluxo')"
 
     local branches_sync_status=0
@@ -40,15 +74,38 @@ function fluxo_doctor {
     done
 
     if [ $branches_sync_status -gt 0 ]; then
-        echo
-        echo "❌ ✋ Brannches estão desincronizadas. Siga as instruções acima para sincronizá-las"
+        exit 1
+    else
+        exit 0
+    fi
+}
+
+function fluxo_doctor {
+    local error_count=0
+
+    echo
+
+    analyze "unexistent_branches" \
+        "✅ 👍 Todas as branches do fluxo existem" \
+        "❌ ✋ Algumas branches do fluxo não existem nesse repositório local."
+
+    echo
+
+    analyze "branches_commits_sync_status" \
+        "✅ 👍 Todas as branches do fluxo estão com os commits sincronizados" \
+        "❌ ✋ Algumas branches estão desincronizadas. Siga as instruções abaixo para sincronizá-las"
+        
+    echo
+
+    if [ $error_count -gt 0 ]; then
+        [ $error_count -eq 1 ] && local pluralized_error_word="erro" || local pluralized_error_word="erros"
+
+        echo -e $RED$BOLD$UNDERLINE"$error_count" "$RESET$RED$UNDERLINE$pluralized_error_word"
         echo
         exit 1
     else
+        echo -e $GREEN$BOLD"Sem erros"
         echo
-        echo "✅ 👍 Branches sincronizadas"
-        echo
-        exit
+        exit 0
     fi
-
 }
