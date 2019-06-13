@@ -96,15 +96,16 @@ function fluxo_doctor {
         "❌ ✋ Algumas branches estão desincronizadas. Siga as instruções abaixo para sincronizá-las"
         
     echo
-
+    
+    echo -ne $(style $BOLD"Resultado geral: ")
     if [ $error_count -gt 0 ]; then
         [ $error_count -eq 1 ] && local pluralized_error_word="erro" || local pluralized_error_word="erros"
 
-        echo -e $RED$BOLD$UNDERLINE"$error_count" "$RESET$RED$UNDERLINE$pluralized_error_word"
+        echo -e $(style $RED$BOLD$UNDERLINE "$error_count $pluralized_error_word")
         echo
         exit 1
     else
-        echo -e $GREEN$BOLD"Sem erros"
+        echo -e "🌈✨ " $GREEN$BOLD"Sem erros"
         echo
         exit 0
     fi
