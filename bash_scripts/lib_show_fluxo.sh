@@ -282,14 +282,15 @@ function show_fluxo {
 
       for (( index=$known_branches_length ; index>0 ; index-- )) ; do
         local fluxo_branch="${known_branches[index - 1]}"
-        local fluxo_branch_children="$(git br --format="%(refname:short)" --contains $fluxo_branch)"
+        local fluxo_branch_children="$(git br --format="%(refname:short)" --contains $fluxo_branch | grep -v $fluxo_branch)"
 
         local ordered_draft_branches="$(filter_branches_in "$unknown_to_fluxo_branches" "$fluxo_branch_children")"
         
         if [ ! -z "$ordered_draft_branches" ]; then
-          all_drafts+="$(echo -e "$ordered_draft_branches")"
+          [ $index -lt $known_branches_length ] && all_drafts+="\\n"
+          all_drafts+="$ordered_draft_branches"
           unknown_to_fluxo_branches=$(filter_branches_not_in "$unknown_to_fluxo_branches" "$all_drafts")
-
+          
           local number_of_branches="$(count "$ordered_draft_branches")"
           [ "$number_of_branches" -eq 1 ] && local pluralized_branch_word="branch" || local pluralized_branch_word="branches"
           local draft_title="$(tput bold)$(tput setaf 5)$fluxo_branch$(tput sgr0)\033[38;5;242m – $number_of_branches draft $pluralized_branch_word $(tput sgr0)"
