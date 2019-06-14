@@ -2,20 +2,26 @@ function filter_branches_in {
     local main_branches="$1"
     local filter_arg_branches="$2"
 
-    local filter_arg_branches_for_grep=$(echo -e "$filter_arg_branches" | tr '\n' '|')
+    if [ -n "$filter_arg_branches" ]; then
+      local filter_arg_branches_for_grep=$(echo -e "$filter_arg_branches" | tr '\n' '|')
 
-    local branches="$(echo -e "$main_branches" | grep -wE "${filter_arg_branches_for_grep%|}")"
-	echo -e "$branches"
+      local branches="$(echo -e "$main_branches" | grep -wE "${filter_arg_branches_for_grep%|}")"
+      echo -e "$branches"
+    fi
 }
 
 function filter_branches_not_in {
     local main_branches="$1"
     local filter_arg_branches="$2"
 
-    local filter_arg_branches_for_grep=$(echo -e "$filter_arg_branches" | tr '\n' '|')
+    if [ -n "$filter_arg_branches" ]; then
+      local filter_arg_branches_for_grep=$(echo -e "$filter_arg_branches" | tr '\n' '|')
 
-    local branches="$(echo -e "$main_branches" | grep -v -wE "${filter_arg_branches_for_grep%|}")"
-	echo -e "$branches"
+      local branches="$(echo -e "$main_branches" | grep -v -wE "${filter_arg_branches_for_grep%|}")"
+	    echo -e "$branches"
+    else
+      echo -e "$main_branches"
+    fi
 }
 
 function get_unknown_branches {
