@@ -296,7 +296,7 @@ function show_fluxo {
       for (( loop_index=$known_branches_length ; loop_index>0 ; loop_index-- )) ; do
           local branch_position="$(( loop_index - 1 ))"
           local fluxo_branch="${known_branches[branch_position]}"
-          local fluxo_branch_children="$(git br --format="%(refname:short)" --sort="committerdate" --contains $fluxo_branch | grep -wv $fluxo_branch)"
+          local fluxo_branch_children="$(git br --format="%(refname:short)" --sort="committerdate" --contains "$fluxo_branch" | grep -v -wE "^$fluxo_branch$")"
 
           local ordered_draft_branches="$(filter_branches_in "$unknown_to_fluxo_branches" "$fluxo_branch_children")"
 
