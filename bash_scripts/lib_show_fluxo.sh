@@ -283,9 +283,13 @@ function show_fluxo {
     local known_branches="$(get_existent_fluxo_branches "$fluxo_branches_from_file")"
     local unknown_to_fluxo_branches="$(get_unknown_branches "$fluxo_branches_from_file")"
 
+    if [ -n "$from_branch_arg" ] && [ -z "$(filter_branches_in "$known_branches" "$from_branch_arg")" ]; then
+      [ $raw -eq 0 ] && echo -e "Can't show drafts from '$from_branch_arg', because there isn't a fluxo branch named '$from_branch_arg'"
+      exit 1
+    fi
+
     IFS=$'\n'; known_branches=($known_branches); unset IFS;
-
-
+    
     local drafts_view="$(
       local all_draft_branches=""
       local known_branches_length=${#known_branches[@]}
@@ -338,8 +342,6 @@ function show_fluxo {
           fi
       done
 
-      local drafts_view_title="$(render_branches_title "draft" "$all_draft_branches" $(tput setaf 5))"
-
       if [ -n "$all_draft_branches" ]; then
         local drafts_view_body="$(echo -e "${drafts_view_inverted%%\\n}" | tail -r)"
       elif [ -z "$from_branch_arg" ]; then
@@ -349,6 +351,7 @@ function show_fluxo {
       if [ $raw -eq 1 ]; then
         echo -e "$drafts_view_body"
       else
+        local drafts_view_title="$(render_branches_title "draft" "$all_draft_branches" $(tput setaf 5))"
         echo -e "$drafts_view_title\\n\\n$(echo -e "$drafts_view_body" | sed 's/^/   /')"
       fi
     )"
