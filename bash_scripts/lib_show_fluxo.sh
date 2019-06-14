@@ -298,9 +298,9 @@ function show_fluxo {
         
         local branch_position="$(( loop_index - 1 ))"
         local fluxo_branch="${known_branches[branch_position]}"
-        local fluxo_branch_children="$(git br --format="%(refname:short)" --contains $fluxo_branch | grep -v $fluxo_branch)"
+        local fluxo_branch_children="$(git br --format="%(refname:short)" --sort="committerdate" --contains $fluxo_branch | grep -wv $fluxo_branch)"
 
-        local ordered_draft_branches="$(filter_branches_in "$unknown_to_fluxo_branches" "$fluxo_branch_children")"
+        local ordered_draft_branches="$(filter_branches_in "$fluxo_branch_children" "$unknown_to_fluxo_branches")"
 
 
         local padded_branch_position="$(printf %0"$digits"d $branch_position)"
