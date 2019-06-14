@@ -142,19 +142,30 @@ function render_branches_with_title {
 	fi
 }
 
+function render_branches_color {
+  [ -x $1 ] && echo "$(tput setaf 6)" || echo "$1"
+}
+
+function render_branches_title {
+  local branches_group_name="$1"
+  local branches="$2"
+  local color="$(render_branches_color "$3")"
+
+  local number_of_branches="$(count "$branches")"
+  [ "$number_of_branches" -eq 1 ] && local pluralized_branch_word="branch" || local pluralized_branch_word="branches"
+
+  echo -e "$(tput smul)$(tput bold)$color$number_of_branches $branches_group_name$(tput rmul) $pluralized_branch_word$(tput sgr0)"
+}
+
 function render_branches {
-  local branches_title="$1"
+  local branches_group_name="$1"
   local branches="$2"
   local format="$3"
   local verbose="$4"
   local raw="$5"
+  local color="$(render_branches_color "$6")"
 
-  [ -x $6 ] && local color="$(tput setaf 6)" || local color="$6"
-
-  local number_of_branches="$(count "$branches")"
-  [ "$number_of_branches" -eq 1 ] && local pluralized_branch_word="branch" || local pluralized_branch_word="branches"
-  local title="$(tput smul)$(tput bold)$color$number_of_branches $branches_title$(tput rmul) $pluralized_branch_word$(tput sgr0)"
-
+  local title="$(render_branches_title "$branches_group_name" "$branches" "$color")"
   render_branches_with_title "$title" "$branches" "$format" "$verbose" "$raw" "$color"
 }
 
@@ -275,41 +286,60 @@ function show_fluxo {
 
     IFS=$'\n'; known_branches=($known_branches); unset IFS;
 
+    local all_draft_branches=""
+
     local drafts_view="$(
-      local all_drafts=""
       local known_branches_length=${#known_branches[@]}
       local drafts_view_inverted=""
 
-      for (( index=$known_branches_length ; index>0 ; index-- )) ; do
-        local fluxo_branch="${known_branches[index - 1]}"
+      local digits="${#known_branches_length}"
+
+      for (( loop_index=$known_branches_length ; loop_index>0 ; loop_index-- )) ; do
+        
+        local branch_position="$(( loop_index - 1 ))"
+        local fluxo_branch="${known_branches[branch_position]}"
         local fluxo_branch_children="$(git br --format="%(refname:short)" --contains $fluxo_branch | grep -v $fluxo_branch)"
 
         local ordered_draft_branches="$(filter_branches_in "$unknown_to_fluxo_branches" "$fluxo_branch_children")"
+
+
+        local padded_branch_position="$(printf %0"$digits"d $branch_position)"
         
-        if [ ! -z "$ordered_draft_branches" ]; then
-          [ $index -lt $known_branches_length ] && all_drafts+="\\n"
-          all_drafts+="$ordered_draft_branches"
-          unknown_to_fluxo_branches=$(filter_branches_not_in "$unknown_to_fluxo_branches" "$all_drafts")
+        if [ -n "$ordered_draft_branches" ]; then
+          [ $loop_index -lt $known_branches_length ] && all_draft_branches+="\\n"
+          all_draft_branches+="$ordered_draft_branches"
+          unknown_to_fluxo_branches=$(filter_branches_not_in "$unknown_to_fluxo_branches" "$all_draft_branches")
           
           local number_of_branches="$(count "$ordered_draft_branches")"
           [ "$number_of_branches" -eq 1 ] && local pluralized_branch_word="branch" || local pluralized_branch_word="branches"
-          local draft_title="$(tput bold)$(tput setaf 5)$fluxo_branch$(tput sgr0)\033[38;5;242m – $number_of_branches draft $pluralized_branch_word $(tput sgr0)"
+          local draft_title="\033[38;5;242mfrom$(tput sgr0)$(tput setaf 5) $padded_branch_position| $(tput bold)$fluxo_branch$(tput sgr0)\033[38;5;242m – $number_of_branches draft $pluralized_branch_word $(tput sgr0)"
+
+          [ $raw -eq 1 ] && local format="%(refname:short)" || local format="   %(if)%(HEAD)%(then) * #color|–—#rcolor $(tput bold)%(color:green)%(refname:short)%(else)  \033[38;5;242m |–—$(tput sgr0) %(refname:short)%(end)"
 
           local view="$(render_branches_with_title "$draft_title" "$ordered_draft_branches" "$format" "$verbose" "$raw" "$(tput setaf 6)")"
           local inverted_view="$(echo "$view" | tail -r)"
 
           drafts_view_inverted+="\n$inverted_view\n"
           if [ "$from_branch_arg" == "$fluxo_branch" ]; then
+            all_draft_branches="$ordered_draft_branches"
             drafts_view_inverted="\n$inverted_view\n"
             break
           fi
         elif [ "$from_branch_arg" == "$fluxo_branch" ]; then
+          all_draft_branches=""
           [ $raw -eq 1 ] && drafts_view_inverted="" || drafts_view_inverted="No drafts from $fluxo_branch"
           break
         fi
       done
 
-      echo -e "${drafts_view_inverted%%\\n}" | tail -r
+      local drafts_view_title="$(render_branches_title "draft" "$all_draft_branches" $(tput setaf 5))"
+      local drafts_view_body="$(echo -e "${drafts_view_inverted%%\\n}" | tail -r)"
+      
+      if [ $raw -eq 1 ]; then
+        echo -e "$drafts_view_body"
+      else
+        echo -e "$drafts_view_title\\n\\n$(echo -e "$drafts_view_body" | sed 's/^/   /')"
+      fi
     )"
   fi
 
