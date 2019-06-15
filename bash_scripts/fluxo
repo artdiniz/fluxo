@@ -44,6 +44,10 @@ show|s)
     shift
     show_fluxo "$@"
     ;;
+drafts|dt)
+    shift
+    show_fluxo --drafts"$@"
+    ;;
 diff|d)
     shift
     generate_fluxo_diff_files "$@"
