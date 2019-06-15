@@ -46,7 +46,7 @@ show|s)
     ;;
 drafts|dt)
     shift
-    show_fluxo --drafts"$@"
+    show_fluxo --drafts "$@"
     ;;
 diff|d)
     shift
