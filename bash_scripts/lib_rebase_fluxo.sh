@@ -236,7 +236,7 @@ function rebase_fluxo {
       git update-ref refs/hidden/octomerge $octomerge || die "couldn't create branch"
       
       # # The money shot: rebase the octomerge onto the new_commits_branch.
-      git rebase --preserve-merge --onto $new_commits_branch --root refs/hidden/octomerge ||
+      git rebase --preserve-merge $new_commits_branch refs/hidden/octomerge ||
       exit $? # if the rebase drops to shell, stop here.
     fi
   fi
