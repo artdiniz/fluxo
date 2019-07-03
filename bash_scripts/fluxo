@@ -5,7 +5,7 @@ GIT-FLUXO
 
 $(tput bold)USAGE$(tput sgr0)
 
-  git fluxo <show | diff | rebase>
+  git fluxo <show | diff | rebase | doctor>
   git fluxo -- <-h|--help>
 
 $(tput bold)ACTIONS$(tput sgr0)
