@@ -5,15 +5,15 @@
   cd ~/the/folder
   git clone https://github.com/artdiniz/fluxo.git
   ```
-  2. Enable execution permissions of all cloned files:
+  2. Enable execution permissions for all cloned files:
     
   ```bash
   chmod -R +x ~/the/folder
   ```
-  3. Create a git alias in `~/.gitconfig`:
+  3. Create a git alias in `~/.gitconfig` pointing to the fluxo bash script file:
   ```
   [alias]
-    fluxo = !bash ~/workspaces/caelum/fluxo/bash_scripts/fluxo
+    fluxo = !bash ~/the/folder/fluxo/bash_scripts/fluxo
   ```
   
 # Usage
