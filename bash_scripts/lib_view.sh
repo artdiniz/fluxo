@@ -26,14 +26,16 @@ function view_join {
 }
 
 function view_git_for_each_ref {
-	branches=$1
-	git_for_each_ref_args="${@:2}"
+	local branches="$1"
+	local git_for_each_ref_args="${@:2}"
 
-	formattedBranches="$(
-		echo -ne "$branches" |
-		xargs -I {} echo "git for-each-ref $(echo -e "$git_for_each_ref_args") --color=always 'refs/heads/{}'" | 
-		bash -
+  local branches="${branches%%"\n"}"
+
+	local formattedBranches="$(
+		echo "$branches" |
+		xargs -I %% echo git for-each-ref --color=always "$(echo -e "$git_for_each_ref_args")" \'refs/heads/%%\' | 
+    bash -
 	)"
 
-	echo -e "${formattedBranches%"\n"}"
+	echo "$formattedBranches"
 }
