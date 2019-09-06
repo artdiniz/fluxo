@@ -7,19 +7,17 @@ function analyze {
     local success_message="$2"
     local failed_message="$3"
 
-    local run_result_view="$($function_name)"
-    ($function_name &>/dev/null)
+    local result="$($function_name)"
 
-    local status=$?
-    if [ $status -gt 0 ]; then
+    if [ "$result" != 0 ]; then
         (( error_count++ ))
         echo -e "$failed_message"
     else
         echo -e "$success_message"
     fi
 
-    if [ ! -z "$run_result_view" ]; then
-        echo -e "$run_result_view" | sed 's/^/    /'
+    if [ "$result" != 0 ] && [ "$result" != 1 ] && [ ! -z "$result" ]; then
+        echo -e "$result" | sed 's/^/    /'
     fi
 }
 
@@ -28,9 +26,8 @@ function unexistent_branches {
 
     if [ ! -z "$unexistent_branches" ]; then
         echo -e "$(show_fluxo --unexistent --format="    • %(refname:short)")"
-        exit 1
     else
-        exit 0
+        echo 0
     fi
 }
 
@@ -74,9 +71,9 @@ function branches_commits_sync_status {
     done
 
     if [ $branches_sync_status -gt 0 ]; then
-        exit 1
+        echo 1
     else
-        exit 0
+        echo 0
     fi
 }
 

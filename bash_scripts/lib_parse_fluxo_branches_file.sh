@@ -26,21 +26,21 @@ function filter_branches_not_in {
 
 function get_unknown_branches {
   local fluxo_branches_from_file="$1"
-  local all_branches=$(git br --sort="committerdate" --format="%(refname:short)")
+  local all_branches=$(git branch --sort="committerdate" --format="%(refname:short)")
 
   echo -e "$(filter_branches_not_in "$all_branches" "$fluxo_branches_from_file")"
 }
 
 function get_unexistent_fluxo_branches   {
   local fluxo_branches_from_file="$1"
-  local all_branches=$(git br --format="%(refname:short)")
+  local all_branches=$(git branch --format="%(refname:short)")
 
   echo -e "$(filter_branches_not_in "$fluxo_branches_from_file" "$all_branches")"
 }
 
 function get_existent_fluxo_branches {
   local fluxo_branches_from_file="$1"
-  local all_branches=$(git br --format="%(refname:short)")
+  local all_branches=$(git branch --format="%(refname:short)")
 
   echo -e "$(filter_branches_in "$fluxo_branches_from_file" "$all_branches")"
 }

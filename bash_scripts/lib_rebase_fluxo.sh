@@ -205,7 +205,7 @@ function rebase_fluxo {
       exit 1
     fi
 
-    all_affected_branches="$(git br --contains "$next_branch" --format="%(refname:short)")"
+    all_affected_branches="$(git branch --contains "$next_branch" --format="%(refname:short)")"
 
     ordered_affected_branches="$(filter_branches_in "$fluxo_ordered_branches" "$all_affected_branches")"
     unknown_to_fluxo_branches="$(
@@ -342,7 +342,7 @@ function rebase_fluxo {
     local new_branch_head_hash="$(git show --format=%h ${new_commit_list[index - 1]} | head -n1)"
     local new_branch_head_full_hash="$(git show --format=%H ${new_commit_list[index - 1]} | head -n1)"
     
-    git br -f $branch $new_branch_head_full_hash
+    git branch -f $branch $new_branch_head_full_hash
     echo "Rebased $branch | $old_branch_head_hash -> $new_branch_head_hash"
   done
 

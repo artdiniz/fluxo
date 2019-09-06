@@ -25,25 +25,19 @@ $(tput bold)SAMPLE COMMANDS$(tput sgr0)
       git fls --format=\"%(objectname)\"
 "
 
-function read_branches_file {
-  local FILE_NAME="_fluxo_branches"
-  local FLUXO_BRANCH_NAME="_fluxo"
+function read_fluxo_branches_from_file {
+  local FILE_NAME="$1"
+  local FLUXO_BRANCH_NAME="$2"
   
   git show "$FLUXO_BRANCH_NAME":"$FILE_NAME" &> /dev/null
   local status=$?
 
   if [ $status != 0 ]; then
-    echo
-		echo "$(view_errorline)$(view_errordot)$(tput bold) No $(tput sgr0 && tput smso) $FILE_NAME $(tput rmso && tput bold) file found. Aborting!$(tput sgr0)"
-		echo "$(view_errorline)$(view_errordot) There must be a file named $(tput smso) $FILE_NAME $(tput sgr0) in a branch $(tput smso) $FLUXO_BRANCH_NAME $(tput sgr0) where all fluxo branches are listed ordered per line"
-		exit 1
+		echo -e 1
   else
     local branches_file_content="$(git show $FLUXO_BRANCH_NAME:$FILE_NAME)"
     if [ -z "$branches_file_content" ]; then
-      echo
-      echo "$(view_errorline)$(view_errordot)$(tput bold) Empty $(tput sgr0 && tput smso) $FILE_NAME $(tput rmso && tput bold) file. Aborting!$(tput sgr0)"
-      echo "$(view_errorline)$(view_errordot) There must be a file named $(tput smso) $FILE_NAME $(tput sgr0) in a branch called $(tput smso) $FLUXO_BRANCH_NAME $(tput sgr0) where all fluxo branches are listed ordered per line"
-      exit 1
+      echo -e 2
     else
       echo -e "$branches_file_content"
     fi
@@ -62,7 +56,7 @@ function print_fluxo_show_usage {
 
 function get_branches_details {
 	local branches="$1"
-  local branches_details="$(echo -e "$branches" | xargs -I %% echo 'git br -v | xargs -I [] echo "X=\"[]\" && echo -e \"\${X##\\* }\" | grep -w \"^%%\"" | bash -  | sed "s/^%% //"' | bash -)"
+  local branches_details="$(echo -e "$branches" | xargs -I %% echo 'git branch -v | xargs -I [] echo "X=\"[]\" && echo -e \"\${X##\\* }\" | grep -w \"^%%\"" | bash -  | sed "s/^%% //"' | bash -)"
   echo -e "$branches_details"
 }
 
@@ -243,11 +237,23 @@ function show_fluxo {
   local show_unexistent="$(has "$show_types" unx)"
   local show_drafts="$(has "$show_types" dft)"
 
-	fluxo_branches_from_file="$(read_branches_file)"
-	if [ $? != 0 ]; then 
-    echo -e "$fluxo_branches_from_file\n"
+  local FILE_NAME="_fluxo_branches"
+  local FLUXO_BRANCH_NAME="_fluxo"
+  
+  local fluxo_branches_from_file="$(read_fluxo_branches_from_file "$FILE_NAME" "$FLUXO_BRANCH_NAME")"
+  
+	if [ "$fluxo_branches_from_file" = 1 ]; then
+    echo
+		echo "$(view_errorline)$(view_errordot)$(tput bold) No $(tput sgr0 && tput smso) $FILE_NAME $(tput rmso && tput bold) file found. Aborting!$(tput sgr0)"
+		echo "$(view_errorline)$(view_errordot) There must be a file named $(tput smso) $FILE_NAME $(tput sgr0) in a branch $(tput smso) $FLUXO_BRANCH_NAME $(tput sgr0) where all fluxo branches are listed ordered per line"
+    exit 1
+  elif [ "$fluxo_branches_from_file" = 2 ]; then
+    echo  
+    echo "$(view_errorline)$(view_errordot)$(tput bold) Empty $(tput sgr0 && tput smso) $FILE_NAME $(tput rmso && tput bold) file. Aborting!$(tput sgr0)"
+    echo "$(view_errorline)$(view_errordot) There must be a file named $(tput smso) $FILE_NAME $(tput sgr0) in a branch called $(tput smso) $FLUXO_BRANCH_NAME $(tput sgr0) where all fluxo branches are listed ordered per line"
     exit 1
   fi
+
 	
   if [ $show_unexistent -eq 1 ]; then
     local unexistent_fluxo_branches="$(get_unexistent_fluxo_branches "$fluxo_branches_from_file")"
@@ -300,7 +306,7 @@ function show_fluxo {
       for (( loop_index=$known_branches_length ; loop_index>0 ; loop_index-- )) ; do
           local branch_position="$(( loop_index - 1 ))"
           local fluxo_branch="${known_branches[branch_position]}"
-          local fluxo_branch_children="$(git br --format="%(refname:short)" --sort="committerdate" --contains "$fluxo_branch" | grep -v -wE "^$fluxo_branch$")"
+          local fluxo_branch_children="$(git branch --format="%(refname:short)" --sort="committerdate" --contains "$fluxo_branch" | grep -v -wE "^$fluxo_branch$")"
 
           local ordered_draft_branches="$(filter_branches_in "$unknown_to_fluxo_branches" "$fluxo_branch_children")"
 
