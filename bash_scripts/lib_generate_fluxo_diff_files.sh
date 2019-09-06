@@ -25,7 +25,7 @@ function read_fluxo_file {
 }
 
 function generate_fluxo_diff_files {
-    color_setup
+    style_setup
 
     [ -z "$1" ] && local dest_folder="_fluxo_diff_files" || local dest_folder=$1
     local project_dir="$(pwd)"
