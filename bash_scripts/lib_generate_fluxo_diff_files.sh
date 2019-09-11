@@ -77,7 +77,7 @@ function generate_fluxo_diff_files {
 
         local diff_file_name="$tmp_folder/$(printf %0"$digits"d $i)-$current_branch.diff"
 
-        echo -e "$main_diff" 2>> /dev/null 1>> "$diff_file_name"
+        echo -e "$main_diff" 1>> "$diff_file_name"
 
         if [ ! -z "$change_only_files" ]; then
             local change_only_files_diff_command="git diff ${relative_dir_diff_arg} -U1000 -M --diff-filter=MR --minimal '$previous_branch'..'$current_branch' -- $include_change_only_files_diff_arg"
