@@ -72,7 +72,7 @@ function generate_fluxo_diff_files {
             fi
         fi
 
-        local main_diff_command="git diff ${relative_dir_diff_arg} -U1000 --minimal '$previous_branch'..'$current_branch' -- $exclude_ignored_diff_args $exclude_change_only_files_diff_arg"
+        local main_diff_command="git diff ${relative_dir_diff_arg} -U1000 --minimal --ignore-space-change '$previous_branch'..'$current_branch' -- $exclude_ignored_diff_args $exclude_change_only_files_diff_arg"
         local main_diff="$(bash -c "$main_diff_command")"
 
         local diff_file_name="$tmp_folder/$(printf %0"$digits"d $i)-$current_branch.diff"
@@ -80,7 +80,7 @@ function generate_fluxo_diff_files {
         echo -e "$main_diff" 1>> "$diff_file_name"
 
         if [ ! -z "$change_only_files" ]; then
-            local change_only_files_diff_command="git diff ${relative_dir_diff_arg} -U1000 -M --diff-filter=MR --minimal '$previous_branch'..'$current_branch' -- $include_change_only_files_diff_arg"
+            local change_only_files_diff_command="git diff ${relative_dir_diff_arg} -U1000 -M --diff-filter=MR --minimal --ignore-space-change '$previous_branch'..'$current_branch' -- $include_change_only_files_diff_arg"
             local change_only_files_add_remove_diff_command="git diff  ${relative_dir_diff_arg} --diff-filter=AD --name-status --minimal '$previous_branch'..'$current_branch' -- $include_change_only_files_diff_arg"
             
             local change_only_files_diff="$(bash -c "$change_only_files_diff_command")"
