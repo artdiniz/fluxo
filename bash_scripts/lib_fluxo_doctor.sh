@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/bash -e
 
 . $(cd "$(dirname "$0")" && pwd)"/lib_style.sh"
 
@@ -70,9 +70,7 @@ function branches_commits_sync_status {
         fi
     done
 
-    if [ $branches_sync_status -gt 0 ]; then
-        echo 1
-    else
+    if [ "$branches_sync_status" -eq 0 ]; then
         echo 0
     fi
 }
