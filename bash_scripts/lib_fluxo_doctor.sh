@@ -100,7 +100,7 @@ function fluxo_doctor {
         echo
         exit 1
     else
-        echo -e "🌈✨ " $GREEN$BOLD"Sem erros"
+        echo -e "🌈✨ " $(style $GREEN$BOLD "Sem erros")
         echo
         exit 0
     fi
