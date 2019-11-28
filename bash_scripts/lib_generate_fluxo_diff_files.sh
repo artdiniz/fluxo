@@ -2,13 +2,6 @@
 
 . $(cd "$(dirname "$0")" && pwd)"/lib_style.sh"
 
-function printBranchesOrderedByFluxo {
-    echo -en "$branches" |
-    xargs -I {} echo {} |
-    grep -v doing |
-    grep -v "gh-pages" 
-}
-
 function read_fluxo_file {
     local FILE_NAME="$1"
     local FLUXO_BRANCH_NAME="_fluxo"
@@ -34,7 +27,7 @@ function generate_fluxo_diff_files {
     }
     trap "remove_tmp_folder $tmp_folder" EXIT
 
-    branches="$(show_fluxo --existent --raw)"
+    local branches="$(show_fluxo --existent --raw)"
 
     status="$?"
     if [ $status != 0 ]; then
@@ -46,12 +39,12 @@ function generate_fluxo_diff_files {
     local ignored_files="$(read_fluxo_file "_fluxo_ignore")"
     local change_only_files=$(read_fluxo_file "_fluxo_change_only")
     
-    local exclude_ignored_diff_args="$(echo -e "$ignored_files" | xargs -I %% echo "':(exclude)$project_dir/%%'" | tr '\n' ' ')"
-    local exclude_change_only_files_diff_arg="$(echo -e "$change_only_files" | xargs -I %% echo "':(exclude)$project_dir/%%'" | tr '\n' ' ')"
+    local exclude_ignored_diff_args="$(echo -e "$ignored_files" | xargs -I %% echo "':(exclude,top)%%'" | tr '\n' ' ')"
+    local exclude_change_only_files_diff_arg="$(echo -e "$change_only_files" | xargs -I %% echo "':(exclude,top)%%'" | tr '\n' ' ')"
 
     local include_change_only_files_diff_arg="$(echo -e "$change_only_files" | xargs -I %% echo "%%" | tr '\n' ' ')"
 
-    IFS=$'\n' branches_array=($(printBranchesOrderedByFluxo))
+    IFS=$'\n' branches_array=($(echo "$branches"))
 
     local qt_files=$(( ${#branches_array[@]} - 1 ))
     local digits="${#qt_files}"
@@ -80,8 +73,8 @@ function generate_fluxo_diff_files {
         echo -e "$main_diff" 1>> "$diff_file_name"
 
         if [ ! -z "$change_only_files" ]; then
-            local change_only_files_diff_command="git diff ${relative_dir_diff_arg} -U1000 --find-renames --diff-filter=MR --minimal --ignore-space-change '$previous_branch'..'$current_branch' -- $include_change_only_files_diff_arg"
-            local change_only_files_add_remove_diff_command="git diff  ${relative_dir_diff_arg} --diff-filter=AD --name-status --minimal '$previous_branch'..'$current_branch' -- $include_change_only_files_diff_arg"
+            local change_only_files_diff_command="git diff ${relative_dir_diff_arg} -U1000 --find-renames --diff-filter=MR --minimal --ignore-space-change '$previous_branch'..'$current_branch' -- $include_change_only_files_diff_arg $exclude_ignored_diff_args"
+            local change_only_files_add_remove_diff_command="git diff  ${relative_dir_diff_arg} --diff-filter=AD --name-status --minimal '$previous_branch'..'$current_branch' -- $include_change_only_files_diff_arg $exclude_ignored_diff_args"
             
             local change_only_files_diff="$(bash -c "$change_only_files_diff_command")"
             local change_only_files_add_remove_diff="$(bash -c "$change_only_files_add_remove_diff_command")"
