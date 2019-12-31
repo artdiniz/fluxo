@@ -77,7 +77,6 @@ function branches_commits_sync_status {
     local known_branches="$(show_fluxo --raw --existent | grep -v '_fluxo')"
 
     local branches_sync_status=0
-    # show_fluxo --raw --unknown | grep -v '_fluxo'
 
     IFS=$'\n'; known_branches=($known_branches); unset IFS;
 
