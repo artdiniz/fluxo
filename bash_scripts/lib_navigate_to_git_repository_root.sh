@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/bash -e
 
 function navigate_to_git_repository_root {
     . "$(git --exec-path)/git-sh-setup"
