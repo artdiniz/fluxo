@@ -66,7 +66,7 @@ function unexistent_branches {
     local unexistent_branches="$(show_fluxo --raw --unexistent)"
 
     if [ ! -z "$unexistent_branches" ]; then
-        echo -e "$(show_fluxo --unexistent --format="    • %(refname:short)")"
+        printf '%s\n' "$(show_fluxo --unexistent --format="    • %(refname:short)")"
         return $ERROR
     else
         return $OK
@@ -92,18 +92,32 @@ function branches_commits_sync_status {
 
             local new_commits_log=$(
             git log --no-merges \
-                --format="– $(tput setaf 6)%h$(tput sgr0)$(tput bold)' by '$(tput sgr0)%aN \(%cr\)%n%n'  Commit message: '%B%n\ " \
+                --format="– $(tput setaf 6)%h$(tput sgr0)$(tput bold) by $(tput sgr0)%aN (%cr)%n%n  Commit message: %B%n" \
                 $previous_branch ^$branch
             )
 
-            local new_commits_log_first_line="$(echo -ne "$new_commits_log" | head -n1)"
-            local new_commits_log_rest="$(echo -ne "$new_commits_log" | tail -n +2)"
+            local new_commits_log_info="$(printf %s "$new_commits_log" | head -n1)"
+            
+            local new_commits_log_message="$(printf %s "$new_commits_log" | tail -n +3)"
+            local new_commits_log_message_first_line="$(printf %s "$new_commits_log_message" | head -n1)"
+            local new_commits_log_message_rest="$(printf %s "$new_commits_log_message" | tail -n +2)"
+
+            local pluralized_commit_word
+            local pluralized_commit_exists_word
+            if [ $number_of_commits -eq 1 ]; then
+                pluralized_commit_word="commit"
+                pluralized_commit_exists_word="existe"
+            else
+                pluralized_commit_word="commits"
+                pluralized_commit_exists_word="existem"
+            fi
             
             echo
-            echo "$( tput setaf 6)$( tput smul)$( tput bold)$number_of_commits commits$(tput sgr0) da branch $(tput setaf 5)$(tput smul)$(tput bold)$previous_branch$(tput sgr0) não existem na branch $(tput setaf 5)$(tput smul)$(tput bold)$branch$(tput sgr0)"
+            echo "$( tput setaf 6)$( tput smul)$( tput bold)$number_of_commits $pluralized_commit_word$(tput sgr0) da branch $(tput setaf 5)$(tput smul)$(tput bold)$previous_branch$(tput sgr0) não $pluralized_commit_exists_word na branch $(tput setaf 5)$(tput smul)$(tput bold)$branch$(tput sgr0)"
             echo
-            echo -ne "$new_commits_log_first_line" | xargs -I {} bash -c 'echo -ne "        {}\n"'
-            echo -ne "$new_commits_log_rest" | xargs -I {} bash -c 'echo -ne "        {}\n"'
+            printf %s "$new_commits_log_info" | sed 's/^/        /'
+            printf %s "$new_commits_log_message_first_line" | sed 's/^/        /'
+            printf %s "$new_commits_log_message_rest" | sed 's/^/                        | /'
             
             echo
             echo "Execute o seguinte comando:"

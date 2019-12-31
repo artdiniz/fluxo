@@ -10,7 +10,7 @@ function style_setup {
     local purple_0=$( tput setaf 5)
     local cyan_0=$(   tput setaf 6)
     local grey_0="\033[38;5;242m"
-    local reset_0=$(  tput sgr0   )"\033[0m"
+    local reset_0=$(  tput sgr0   )
     
 
     RED="$red_0"
