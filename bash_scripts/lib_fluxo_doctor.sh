@@ -2,16 +2,50 @@
 
 . $(cd "$(dirname "$0")" && pwd)"/lib_style.sh"
 
+OK=0
+ERROR=1
+
+function fluxo_doctor {
+    local error_count=0
+
+    echo
+
+    analyze "unexistent_branches" error_count \
+        "✅ 👍 Todas as branches do fluxo existem" \
+        "❌ ✋ Algumas branches do fluxo não existem nesse repositório local."
+
+    echo
+
+    analyze "branches_commits_sync_status" error_count \
+        "✅ 👍 Todas as branches do fluxo estão com os commits sincronizados" \
+        "❌ ✋ Algumas branches estão desincronizadas. Siga as instruções abaixo para sincronizá-las"
+        
+    echo
+    
+    printf '\n%s' "$(style $BOLD "Resultado geral: ")"
+    if [ $error_count -gt 0 ]; then
+        [ $error_count -eq 1 ] && local pluralized_error_word="erro" || local pluralized_error_word="erros"
+
+        printf '%s\n\n'  "$(style $RED$BOLD$UNDERLINE "$error_count $pluralized_error_word")"
+        exit $ERROR
+    else
+        printf '%s\n\n' "🌈✨ $(style $GREEN$BOLD "Sem erros")"
+        exit $OK
+    fi
+}
+
+
 function analyze {
     local function_name="$1"
-    local success_message="$2"
-    local failed_message="$3"
+    local error_count_var_name="$2"
+    local current_error_count="${!error_count_var_name}"
+    local success_message="$3"
+    local failed_message="$4"
 
     local result="$($function_name)"
 
-    if [ "$result" != 0 ]; then
-        (( error_count++ ))
-        echo -e "$failed_message"
+        (( current_error_count++ ))
+        printf '%s\n' "$failed_message"
     else
         echo -e "$success_message"
     fi
@@ -19,6 +53,8 @@ function analyze {
     if [ "$result" != 0 ] && [ "$result" != 1 ] && [ ! -z "$result" ]; then
         echo -e "$result" | sed 's/^/    /'
     fi
+
+    eval "$error_count_var_name=$current_error_count"
 }
 
 function unexistent_branches {
@@ -72,36 +108,5 @@ function branches_commits_sync_status {
 
     if [ "$branches_sync_status" -eq 0 ]; then
         echo 0
-    fi
-}
-
-function fluxo_doctor {
-    local error_count=0
-
-    echo
-
-    analyze "unexistent_branches" \
-        "✅ 👍 Todas as branches do fluxo existem" \
-        "❌ ✋ Algumas branches do fluxo não existem nesse repositório local."
-
-    echo
-
-    analyze "branches_commits_sync_status" \
-        "✅ 👍 Todas as branches do fluxo estão com os commits sincronizados" \
-        "❌ ✋ Algumas branches estão desincronizadas. Siga as instruções abaixo para sincronizá-las"
-        
-    echo
-    
-    echo -ne $(style $BOLD"Resultado geral: ")
-    if [ $error_count -gt 0 ]; then
-        [ $error_count -eq 1 ] && local pluralized_error_word="erro" || local pluralized_error_word="erros"
-
-        echo -e $(style $RED$BOLD$UNDERLINE "$error_count $pluralized_error_word")
-        echo
-        exit 1
-    else
-        echo -e "🌈✨ " $(style $GREEN$BOLD "Sem erros")
-        echo
-        exit 0
     fi
 }
