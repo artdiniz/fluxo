@@ -1,4 +1,5 @@
-#!/bin/bash -e
+#!/usr/bin/env bash 
+set -e
 
 FLUXO_REBASE_HELP_MESSAGE="\
 GIT-FLUXOREBASE

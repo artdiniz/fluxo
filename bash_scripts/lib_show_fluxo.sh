@@ -1,4 +1,5 @@
-#!/bin/bash -e
+#!/usr/bin/env bash 
+set -e
 
 FLUXO_SHOW_HELP_MESSAGE="\
 GIT-FLUXOSHOW
