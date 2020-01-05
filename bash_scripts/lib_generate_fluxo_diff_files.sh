@@ -172,7 +172,7 @@ function generate_fluxo_diff_files {
 
     parse_args branches output_directory "$@"
 
-    [ -z "$output_directory" ] && local dest_folder="_fluxo_diff_files" || local dest_folder="$output_directory"
+    branches="$(printf %b "$branches")"
     
     local tmp_folder=$(mktemp -d)
     function remove_tmp_folder {
@@ -235,16 +235,26 @@ function generate_fluxo_diff_files {
         fi
     done
 
-    mkdir -p "$dest_folder"_new
-    mv $tmp_folder/* "$dest_folder"_new
-    [ -r "$dest_folder" ] && rm -r "$dest_folder" 2> /dev/null
+    if [ -z "$output_directory" ]; then
+        local file_name
+        while read -r file_name; do
+            printf '\n%b\n' "$(cat "$tmp_folder"/"$file_name")"
+        done <<< "$(ls "$tmp_folder")"
 
-    mv "$dest_folder"_new "$dest_folder"
+        rm -r $tmp_folder
+    else
+        mkdir -p "$output_directory"_new
+        mv $tmp_folder/* "$output_directory"_new
+        [ -r "$output_directory" ] && rm -r "$output_directory" 2> /dev/null
 
-    echo
-    echo -e "Created $(style $BOLD$PURPLE $qt_files) diff files in $(style $UNDERLINE$CYAN `pwd $dest_folder`/$dest_folder/)"
-    echo
+        mv "$output_directory"_new "$output_directory"
 
-    ls $dest_folder | xargs -I {} bash -c "echo -ne \"    $(style $GREEN "•") $(style $GREY {})\n\""
-    echo
+        echo
+        echo -e "Created $(style $BOLD$PURPLE $qt_files) diff files in $(style $UNDERLINE$CYAN `pwd $output_directory`/$output_directory/)"
+        echo
+
+        ls $output_directory | xargs -I {} bash -c "echo -ne \"    $(style $GREEN "•") $(style $GREY {})\n\""
+        echo
+    fi
+
 }
