@@ -53,9 +53,9 @@ function read_fluxo_file {
     local status=$?
 
     if [ $status -eq 0 ]; then
-        local ignore_file_content="$(git show $FLUXO_BRANCH_NAME:$FILE_NAME)"
-        if [ ! -z "$ignore_file_content" ]; then
-            echo -ne "$ignore_file_content"
+        local file_content="$(git show $FLUXO_BRANCH_NAME:$FILE_NAME)"
+        if [ ! -z "$file_content" ]; then
+            printf '%b' "$file_content"
         fi
     fi
 }
@@ -184,12 +184,12 @@ function generate_fluxo_diff_files {
     local ignored_files="$(read_fluxo_file "_fluxo_ignore")"
     local change_only_files=$(read_fluxo_file "_fluxo_change_only")
     
-    local exclude_ignored_diff_args="$(echo -e "$ignored_files" | xargs -I %% echo "':(exclude,top)%%'" | tr '\n' ' ')"
-    local exclude_change_only_files_diff_arg="$(echo -e "$change_only_files" | xargs -I %% echo "':(exclude,top)%%'" | tr '\n' ' ')"
+    local exclude_ignored_diff_args="$(printf '%b\n' "$ignored_files" | sed 's/^/:(exclude,top)/' | tr '\n' ' ')"
+    local exclude_change_only_files_diff_arg="$(printf '%b\n' "$change_only_files" | sed 's/^/:(exclude,top)/' | tr '\n' ' ')"
 
-    local include_change_only_files_diff_arg="$(echo -e "$change_only_files" | xargs -I %% echo "%%" | tr '\n' ' ')"
+    local include_change_only_files_diff_arg="$(printf '%b\n' "$change_only_files" | tr '\n' ' ')"
 
-    IFS=$'\n' branches_array=($(echo "$branches"))
+    IFS=$'\n' branches_array=($(printf '%s\n' "$branches"))
 
     local qt_files=$(( ${#branches_array[@]} - 1 ))
     local digits="${#qt_files}"
@@ -205,7 +205,7 @@ function generate_fluxo_diff_files {
             if [ $status -eq 0 ]; then
                 local relative_dir_diff_arg="--relative='$root_dir'"
             else
-                echo -e "Pasta raíz '$root_dir' foi definida no arquivo _fluxo_root, porém ela não existe nas branches $current_branch ou $previous_branch"
+                printf '%b\n' "Pasta raíz '$root_dir' foi definida no arquivo _fluxo_root, porém ela não existe nas branches $current_branch ou $previous_branch"
                 exit 1 
             fi
         fi
@@ -215,7 +215,7 @@ function generate_fluxo_diff_files {
 
         local diff_file_name="$tmp_folder/$(printf %0"$digits"d $i)-$current_branch.diff"
 
-        echo -e "$main_diff" 1>> "$diff_file_name"
+        printf '%b\n' "$main_diff" 1>> "$diff_file_name"
 
         if [ ! -z "$change_only_files" ]; then
             local change_only_files_diff_command="git diff ${relative_dir_diff_arg} -U1000 --find-renames --diff-filter=MR --minimal --ignore-space-change '$previous_branch'..'$current_branch' -- $include_change_only_files_diff_arg $exclude_ignored_diff_args"
@@ -225,12 +225,12 @@ function generate_fluxo_diff_files {
             local change_only_files_add_remove_diff="$(bash -c "$change_only_files_add_remove_diff_command")"
 
             if [ ! -z "$change_only_files_diff" ]; then
-                echo -e "$change_only_files_diff" 2>> /dev/null 1>> "$diff_file_name"
+                printf '%b\n' "$change_only_files_diff" 2>> /dev/null 1>> "$diff_file_name"
             fi
 
             if [ ! -z "$change_only_files_add_remove_diff" ]; then
-                echo -e "diff --fluxo a/change_only_files b/change_only_files" 2>> /dev/null 1>> "$diff_file_name"
-                echo -e "$change_only_files_add_remove_diff" 2>> /dev/null 1>> "$diff_file_name"
+                printf '%b\n' "diff --fluxo a/change_only_files b/change_only_files" 2>> /dev/null 1>> "$diff_file_name"
+                printf '%b\n' "$change_only_files_add_remove_diff" 2>> /dev/null 1>> "$diff_file_name"
             fi
         fi
     done
@@ -249,12 +249,10 @@ function generate_fluxo_diff_files {
 
         mv "$output_directory"_new "$output_directory"
 
-        echo
-        echo -e "Created $(style $BOLD$PURPLE $qt_files) diff files in $(style $UNDERLINE$CYAN `pwd $output_directory`/$output_directory/)"
-        echo
+        printf '\n%b\n\n' "Created $(style $BOLD$PURPLE $qt_files) diff files in $(style $UNDERLINE$CYAN `pwd $output_directory`/$output_directory/)"
 
-        ls $output_directory | xargs -I {} bash -c "echo -ne \"    $(style $GREEN "•") $(style $GREY {})\n\""
-        echo
+        ls $output_directory | xargs -I {} bash -c "printf '%b' \"    $(style $GREEN "•") $(style $GREY {})\n\""
+        printf '\n'
     fi
 
 }
