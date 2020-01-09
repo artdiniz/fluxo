@@ -16,7 +16,7 @@ function fluxo_doctor {
         "❌ ✋ Algumas branches do fluxo não existem nesse repositório local."
 
     echo
-
+    
     analyze "branches_commits_sync_status" error_count \
         "✅ 👍 Todas as branches do fluxo estão com os commits sincronizados" \
         "❌ ✋ Algumas branches estão desincronizadas. Siga as instruções abaixo para sincronizá-las"
@@ -39,18 +39,20 @@ function fluxo_doctor {
 function analyze {
     local function_name="$1"
     local error_count_var_name="$2"
-    local current_error_count="${!error_count_var_name}"
+    local current_error_count=${!error_count_var_name}
     local success_message="$3"
     local failed_message="$4"
 
     local result=""
-    local result_status="-1"
+    local result_status=1
 
+    set +e
     result="$($function_name)"
     result_status=$?
+    set -e
 
-    if [ "$result_status" != 0 ]; then
-        (( current_error_count++ ))
+    if [ "$result_status" -ne 0 ]; then
+        current_error_count=$(( current_error_count + 1 ))
         printf '%s\n' "$failed_message"
     else
         printf '%s\n' "$success_message"
