@@ -107,7 +107,7 @@ function parse_args {
         print_diff_usage_and_die
     fi
 
-    local fluxo_branches="$(show_fluxo --existent --raw)"
+    local fluxo_branches="$(get_existent_fluxo_branches)"
 
     if [ $should_diff_all_branches -eq 0 ]; then
         branches_arg="$fluxo_branches"

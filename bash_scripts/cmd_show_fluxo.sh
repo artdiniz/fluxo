@@ -191,12 +191,11 @@ function show_fluxo {
 
       local show_types="${type##--} $show_types"
 
-      shift
-
-      if [ "${1##--}" == "$1" ]; then
-        local from_branch_arg="$1"
-        shift
+      if [ ! -z "$2" ] && [ "${2##--}" == "$2" ]; then
+        local from_branch_arg="$2"
       fi
+
+      shift
     ;;
     --raw)
       local raw=1
@@ -218,26 +217,9 @@ function show_fluxo {
   local show_unexistent="$(has "$show_types" unx)"
   local show_drafts="$(has "$show_types" dft)"
 
-  local FILE_NAME="_fluxo_branches"
-  local FLUXO_BRANCH_NAME="_fluxo"
-  
-  local fluxo_branches_from_file
-    
-	if ! fluxo_branches_from_file="$(read_fluxo_file "$FILE_NAME" "$FLUXO_BRANCH_NAME")"; then
-    echo
-		echo "$(view_errorline)$(view_errordot)$(tput bold) No $(tput sgr0 && tput smso) $FILE_NAME $(tput rmso && tput bold) file found. Aborting!$(tput sgr0)"
-		echo "$(view_errorline)$(view_errordot) There must be a file named $(tput smso) $FILE_NAME $(tput sgr0) in a branch $(tput smso) $FLUXO_BRANCH_NAME $(tput sgr0) where all fluxo branches are listed ordered per line"
-    exit 1
-  elif [ -z "$fluxo_branches_from_file" ]; then
-    echo  
-    echo "$(view_errorline)$(view_errordot)$(tput bold) Empty $(tput sgr0 && tput smso) $FILE_NAME $(tput rmso && tput bold) file. Aborting!$(tput sgr0)"
-    echo "$(view_errorline)$(view_errordot) There must be a file named $(tput smso) $FILE_NAME $(tput sgr0) in a branch called $(tput smso) $FLUXO_BRANCH_NAME $(tput sgr0) where all fluxo branches are listed ordered per line"
-    exit 1
-  fi
-
 	
   if [ $show_unexistent -eq 1 ]; then
-    local unexistent_fluxo_branches="$(get_unexistent_fluxo_branches "$fluxo_branches_from_file")"
+    local unexistent_fluxo_branches="$(get_unexistent_fluxo_branches)"
 
     local number_of_unexistent_fluxo_branches="$(count "$unexistent_fluxo_branches")"
     
@@ -257,18 +239,18 @@ function show_fluxo {
   fi
 
   if [ $show_existent -eq 1 ]; then
-    local existent_branches="$(get_existent_fluxo_branches "$fluxo_branches_from_file")"
+    local existent_branches="$(get_existent_fluxo_branches)"
     local existent_view="$(render_branches "fluxo" "$existent_branches" "$format" "$verbose" "$raw")"
   fi
 
   if [ $show_unknow -eq 1 ]; then 
-    local unknown_to_fluxo_branches="$(get_unknown_branches "$fluxo_branches_from_file")"
+    local unknown_to_fluxo_branches="$(get_unknown_branches)"
     local unknown_to_fluxo_view="$(render_branches "unknown" "$unknown_to_fluxo_branches" "$format" "$verbose" "$raw" "$(tput setaf 5)")"
   fi
 
   if [ $show_drafts -eq 1 ]; then
-    local known_branches="$(get_existent_fluxo_branches "$fluxo_branches_from_file")"
-    local unknown_to_fluxo_branches="$(get_unknown_branches "$fluxo_branches_from_file")"
+    local known_branches="$(get_existent_fluxo_branches)"
+    local unknown_to_fluxo_branches="$(get_unknown_branches)"
 
     if [ -n "$from_branch_arg" ] && [ -z "$(filter_branches_in "$known_branches" "$from_branch_arg")" ]; then
       [ $raw -eq 0 ] && echo -e "Can't show drafts from '$from_branch_arg', because there isn't a fluxo branch named '$from_branch_arg'"
@@ -309,7 +291,7 @@ function show_fluxo {
             [ $raw -eq 1 ] && local format="%(refname:short)" || local format="   %(if)%(HEAD)%(then) * #color|–—–—#rcolor $(tput bold)%(color:green)%(refname:short)%(else)  \033[38;5;242m |–—–—$(tput sgr0) %(refname:short)%(end)"
 
             local view="$(render_branches_with_title "$draft_title" "$ordered_draft_branches" "$format" "$verbose" "$raw" "$(tput setaf 6)")"
-            local inverted_view="$(echo "$view" | tail -r)"
+            local inverted_view="$(echo "$view" | awk '{a[i++]=$0} END {for (j=i-1; j>=0;) print a[j--] }')"
 
             drafts_view_inverted+="\n$inverted_view\n"
             if [ "$from_branch_arg" == "$fluxo_branch" ]; then
@@ -330,7 +312,7 @@ function show_fluxo {
       done
 
       if [ -n "$all_draft_branches" ]; then
-        local drafts_view_body="$(echo -e "${drafts_view_inverted%%\\n}" | tail -r)"
+        local drafts_view_body="$(echo -e "${drafts_view_inverted%%\\n}" | awk '{a[i++]=$0} END {for (j=i-1; j>=0;) print a[j--] }')"
       elif [ -z "$from_branch_arg" ]; then
         [ $raw -eq 0 ] && local drafts_view_body="No draft branches anywhere"
       fi

@@ -60,10 +60,10 @@ function analyze {
 }
 
 function unexistent_branches {
-    local unexistent_branches="$(show_fluxo --raw --unexistent)"
+    local unexistent_branches="$(get_unexistent_fluxo_branches)"
 
     if [ ! -z "$unexistent_branches" ]; then
-        printf '%s\n' "$(show_fluxo --unexistent --format="    • %(refname:short)")"
+        printf '%s\n' "$(get_unexistent_fluxo_branches | sed 's/^/    • /')"
         return $ERROR
     else
         return $OK
@@ -71,7 +71,7 @@ function unexistent_branches {
 }
 
 function branches_commits_sync_status {
-    local known_branches="$(show_fluxo --raw --existent | grep -v '_fluxo')"
+    local known_branches="$(get_existent_fluxo_branches | grep -v '_fluxo')"
 
     local branches_sync_status=0
 

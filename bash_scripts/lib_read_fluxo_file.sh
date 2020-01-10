@@ -35,3 +35,24 @@ function read_fluxo_file_with_cache {
         fi
     fi
 }
+
+function read_fluxo_branches_file {
+    local FLUXO_BRANCH_NAME="$1"
+    local FILE_NAME="_fluxo_branches"
+  
+    local fluxo_branches_from_file
+    
+    if ! fluxo_branches_from_file="$(read_fluxo_file "$FILE_NAME" "$FLUXO_BRANCH_NAME")"; then
+        echo
+		echo "$(view_errorline)$(view_errordot)$(tput bold) No $(tput sgr0 && tput smso) $FILE_NAME $(tput rmso && tput bold) file found. Aborting!$(tput sgr0)"
+		echo "$(view_errorline)$(view_errordot) There must be a file named $(tput smso) $FILE_NAME $(tput sgr0) in a branch $(tput smso) $FLUXO_BRANCH_NAME $(tput sgr0) where all fluxo branches are listed ordered per line"
+        return 1
+    elif [ -z "$fluxo_branches_from_file" ]; then
+        echo  
+        echo "$(view_errorline)$(view_errordot)$(tput bold) Empty $(tput sgr0 && tput smso) $FILE_NAME $(tput rmso && tput bold) file. Aborting!$(tput sgr0)"
+        echo "$(view_errorline)$(view_errordot) There must be a file named $(tput smso) $FILE_NAME $(tput sgr0) in a branch called $(tput smso) $FLUXO_BRANCH_NAME $(tput sgr0) where all fluxo branches are listed ordered per line"
+        return 1
+    fi
+
+    printf '%s' "$fluxo_branches_from_file"
+}

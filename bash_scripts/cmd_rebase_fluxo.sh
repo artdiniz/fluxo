@@ -184,7 +184,7 @@ function rebase_fluxo {
     new_commits_branch="$1"
     next_branch="$2"
 
-    fluxo_ordered_branches=$(show_fluxo --raw --existent)
+    fluxo_ordered_branches=$(get_existent_fluxo_branches)
 
     fluxo_status=$?
     if [ $fluxo_status != 0 ]; then
@@ -194,7 +194,7 @@ function rebase_fluxo {
       exit $fluxo_status
     fi
     
-    unexistent_branches="$(show_fluxo --raw --unexistent)"
+    unexistent_branches="$(get_unexistent_fluxo_branches)"
     unexistent_branches_count="$(count "$unexistent_branches")"
 
     if [ $unexistent_branches_count -gt 0 ]; then
@@ -209,7 +209,7 @@ function rebase_fluxo {
 
     ordered_affected_branches="$(filter_branches_in "$fluxo_ordered_branches" "$all_affected_branches")"
     unknown_to_fluxo_branches="$(
-      filter_branches_in "$(show_fluxo --raw --unknown)" "$all_affected_branches"
+      filter_branches_in "$(get_unknown_branches)" "$all_affected_branches"
     )"
     not_affected_branches=$(
       filter_branches_not_in "$fluxo_ordered_branches" "$all_affected_branches"

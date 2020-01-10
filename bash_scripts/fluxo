@@ -27,7 +27,7 @@ $(tput bold)FLUXO COMMANDS$(tput sgr0)
 "
 
 . $(cd "$(dirname "$0")" && pwd)"/lib_util.sh"
-. $(cd "$(dirname "$0")" && pwd)"/lib_parse_fluxo_branches_file.sh"
+. $(cd "$(dirname "$0")" && pwd)"/lib_get_branches.sh"
 . $(cd "$(dirname "$0")" && pwd)"/lib_view.sh"
 . $(cd "$(dirname "$0")" && pwd)"/lib_navigate_to_git_repository_root.sh"
 . $(cd "$(dirname "$0")" && pwd)"/lib_read_fluxo_file.sh"
