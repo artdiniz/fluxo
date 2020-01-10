@@ -1,9 +1,10 @@
 #!/usr/bin/env bash
+set -Ee
 
 function err_report {
-    echo "Error on line $1"
+    printf '%b\n' "Error at line $1." "Command: $2"
 }
-trap 'err_report $LINENO ' ERR
+trap 'err_report $LINENO "$FLUXO_COMMAND"' ERR
 
 FLUXO_HELP_MESSAGE="\
 GIT-FLUXO
@@ -37,6 +38,8 @@ function fluxo_print_usage {
 }
 
 navigate_to_git_repository_root
+
+FLUXO_COMMAND="$(basename "$0") $@"
 
 case "$1" in
 -h|--help)

@@ -1,5 +1,4 @@
-#!/usr/bin/env bash 
-set -e
+#!/usr/bin/env bash
 
 FLUXO_DIFF_HELP_MESSAGE="\
 GIT-FLUXODIFF

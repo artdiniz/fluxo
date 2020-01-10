@@ -1,5 +1,4 @@
 #!/usr/bin/env bash 
-set -e
 
 . $(cd "$(dirname "$0")" && pwd)"/lib_style.sh"
 
@@ -46,12 +45,7 @@ function analyze {
     local result=""
     local result_status=1
 
-    set +e
-    result="$($function_name)"
-    result_status=$?
-    set -e
-
-    if [ "$result_status" -ne 0 ]; then
+    if ! result="$($function_name)"; then
         current_error_count=$(( current_error_count + 1 ))
         printf '%s\n' "$failed_message"
     else
