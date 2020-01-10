@@ -40,11 +40,8 @@ function print_diff_usage_and_die {
   exit 1
 }
 
-. $(cd "$(dirname "$0")" && pwd)"/lib_style.sh"
-. $(cd "$(dirname "$0")" && pwd)"/lib_parse_fluxo_branches_file.sh"
-. $(cd "$(dirname "$0")" && pwd)"/lib_show_fluxo.sh"
-. $(cd "$(dirname "$0")" && pwd)"/lib_view.sh"
 . $(cd "$(dirname "$0")" && pwd)"/lib_diff_fluxo_branches.sh"
+. $(cd "$(dirname "$0")" && pwd)"/cmd_show_fluxo.sh"
 
 function find_previous_for_from {
     local _item_name="$1"

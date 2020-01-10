@@ -1,34 +1,11 @@
 #!/usr/bin/env bash 
 
-function read_fluxo_file {
-    local FILE_NAME="$1"
-    local FLUXO_BRANCH_NAME="_fluxo"
-
-    local cache_var_name="read_fluxo_file_cache_$FILE_NAME"
-    local cache_file_content="${!cache_var_name}"
-
-    if [ ! -z "$cache_file_content" ]; then
-        printf '%b' "$cache_file_content"
-    else
-        git show "$FLUXO_BRANCH_NAME":"$FILE_NAME" &> /dev/null
-        local status=$?
-
-        if [ $status -eq 0 ]; then
-            local file_content="$(git show $FLUXO_BRANCH_NAME:$FILE_NAME)"
-            eval "$cache_var_name=\$file_content"
-            if [ ! -z "$file_content" ]; then
-                printf '%b' "$file_content"
-            fi
-        fi
-    fi
-}
-
 function diff_fluxo_branches {
     local branches="$(printf %b "$1")"
 
-    local root_dir="$(read_fluxo_file "_fluxo_root")"
-    local ignored_files="$(read_fluxo_file "_fluxo_ignore")"
-    local change_only_files=$(read_fluxo_file "_fluxo_change_only")
+    local root_dir="$(read_fluxo_file_with_cache "_fluxo_root" "_fluxo")"
+    local ignored_files="$(read_fluxo_file_with_cache "_fluxo_ignore" "_fluxo")"
+    local change_only_files=$(read_fluxo_file_with_cache "_fluxo_change_only" "_fluxo")
     
     local exclude_ignored_diff_args="$(printf '%b\n' "$ignored_files" | xargs -I %% echo "':(exclude,top)%%'" | tr '\n' ' ')"
     local exclude_change_only_files_diff_arg="$(printf '%b\n' "$change_only_files" | xargs -I %% echo "':(exclude,top)%%'" | tr '\n' ' ')"

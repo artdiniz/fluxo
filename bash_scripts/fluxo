@@ -1,4 +1,9 @@
-#!/bin/bash -e
+#!/usr/bin/env bash
+
+function err_report {
+    echo "Error on line $1"
+}
+trap 'err_report $LINENO ' ERR
 
 FLUXO_HELP_MESSAGE="\
 GIT-FLUXO
@@ -24,10 +29,8 @@ $(tput bold)FLUXO COMMANDS$(tput sgr0)
 . $(cd "$(dirname "$0")" && pwd)"/lib_parse_fluxo_branches_file.sh"
 . $(cd "$(dirname "$0")" && pwd)"/lib_view.sh"
 . $(cd "$(dirname "$0")" && pwd)"/lib_navigate_to_git_repository_root.sh"
-. $(cd "$(dirname "$0")" && pwd)"/lib_show_fluxo.sh"
-. $(cd "$(dirname "$0")" && pwd)"/lib_generate_fluxo_diff_files.sh"
-. $(cd "$(dirname "$0")" && pwd)"/lib_rebase_fluxo.sh"
-. $(cd "$(dirname "$0")" && pwd)"/lib_fluxo_doctor.sh"
+. $(cd "$(dirname "$0")" && pwd)"/lib_read_fluxo_file.sh"
+. $(cd "$(dirname "$0")" && pwd)"/lib_style.sh"
 
 function fluxo_print_usage {
     echo -ne "\n$FLUXO_HELP_MESSAGE\n"
@@ -42,22 +45,27 @@ case "$1" in
     ;;
 show|s)
     shift
+    . $(cd "$(dirname "$0")" && pwd)"/cmd_show_fluxo.sh"
     show_fluxo "$@"
     ;;
 drafts|dt)
+    . $(cd "$(dirname "$0")" && pwd)"/cmd_show_fluxo.sh"
     shift
     show_fluxo --drafts "$@"
     ;;
 diff|d)
     shift
+    . $(cd "$(dirname "$0")" && pwd)"/cmd_generate_fluxo_diff_files.sh"
     generate_fluxo_diff_files "$@"
     ;;
 rebase|r)
     shift
+    . $(cd "$(dirname "$0")" && pwd)"/cmd_rebase_fluxo.sh"
     rebase_fluxo "$@"
     ;;
 doctor|dr)
     shift
+    . $(cd "$(dirname "$0")" && pwd)"/cmd_fluxo_doctor.sh"
     fluxo_doctor "$@"
     ;;
 *)
