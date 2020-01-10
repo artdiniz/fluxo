@@ -1,5 +1,4 @@
-#!/usr/bin/env bash 
-set -e
+#!/usr/bin/env bash
 
 function style_setup {
     local bold_0=$(   tput bold   )
