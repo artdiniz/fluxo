@@ -27,18 +27,18 @@ $(tput bold)SAMPLE COMMANDS$(tput sgr0)
 
 function print_fluxo_show_usage_and_die {
   echo "Invalid arguments: $@"
-  echo -e "\n$FLUXO_SHOW_HELP_MESSAGE\n"
+  printf '%b\n' "\n$FLUXO_SHOW_HELP_MESSAGE\n"
   exit 1
 }
 
 function print_fluxo_show_usage {
-  echo -e "\n$FLUXO_SHOW_HELP_MESSAGE\n"
+  printf '%b\n' "\n$FLUXO_SHOW_HELP_MESSAGE\n"
 }
 
 function get_branches_details {
 	local branches="$1"
-  local branches_details="$(echo -e "$branches" | xargs -I %% echo 'git branch -v | xargs -I [] echo "X=\"[]\" && echo -e \"\${X##\\* }\" | grep -w \"^%%\"" | bash -  | sed "s/^%% //"' | bash -)"
-  echo -e "$branches_details"
+  local branches_details="$(printf '%b\n' "$branches" | xargs -I %% echo 'git branch -v | xargs -I [] echo "X=\"[]\" && printf '%b\n' \"\${X##\\* }\" | grep -w \"^%%\"" | bash -  | sed "s/^%% //"' | bash -)"
+  printf '%b\n' "$branches_details"
 }
 
 function render_formatted_branches {
@@ -47,9 +47,9 @@ function render_formatted_branches {
   local verbose="$3"
 
   if [ $verbose -eq 0 ]; then
-    echo -e "$formatted_branches"
+    printf '%b\n' "$formatted_branches"
   else
-    IFS=$'\n' branches_name_length=($(echo -e "$branches" | xargs -I %% bash -c 'X="%%" && echo -e "${#X}"'))
+    IFS=$'\n' branches_name_length=($(printf '%b\n' "$branches" | xargs -I %% bash -c 'X="%%" && printf '%b\n' "${#X}"'))
 
     local max_branch_name_length=0
     for i in "${branches_name_length[@]}"; do
@@ -59,8 +59,8 @@ function render_formatted_branches {
     done
 
     IFS=$'\n' branches_name_padding=$(
-      echo -e "$branches" | 
-      xargs -I %% bash -c 'X="%%" && echo -e "${#X}"' | 
+      printf '%b\n' "$branches" | 
+      xargs -I %% bash -c 'X="%%" && printf '%b\n' "${#X}"' | 
       xargs -I %% bash -c "X='%%' && echo \$(($max_branch_name_length - %%))"
     )
     # gets branches an concats with formatted branches names
@@ -69,14 +69,14 @@ function render_formatted_branches {
 
     for i in $(seq 1 "$qt_branches"); do
 
-      echo -ne "$(echo -e "$formatted_branches" | head -n +$i | tail -n1)"
+      printf '%b' "$(printf '%b\n' "$formatted_branches" | head -n +$i | tail -n1)"
 
-      local padding_spaces=$(echo -e "$branches_name_padding" | head -n +$i | tail -n1)
+      local padding_spaces=$(printf '%b\n' "$branches_name_padding" | head -n +$i | tail -n1)
       for j in $(seq 1 "$(($padding_spaces + 1))"); do
-        echo -n " "
+        printf '%s' " "
       done
 
-      echo -ne "$(echo -e "$branches_details" | head -n +$i | tail -n1)"
+      printf '%b' "$(printf '%b\n' "$branches_details" | head -n +$i | tail -n1)"
       echo
     done
   fi
@@ -100,18 +100,18 @@ function render_branches_with_title {
 
 	if [ "$number_of_branches" -gt 0 ]; then
     if [ $raw -eq 1 ]; then
-      echo -e "$(render_formatted_branches "$branches" "$formatted_branches" "$verbose")"
+      printf '%b\n' "$(render_formatted_branches "$branches" "$formatted_branches" "$verbose")"
     else
       local digits="${#number_of_branches}"
 
       local counted_and_formatted_branches="$(
-        echo -e "$formatted_branches" |
+        printf '%b\n' "$formatted_branches" |
         awk -F'\n' -v color="$color" -v color_reset="$(tput sgr0)" -v digits="$digits" '{gsub("#color", color, $1); gsub("#rcolor", color_reset, $1); gsub("#dd", sprintf("%0"digits"d",NR-1) , $1); print $1}'
       )"
 
-      echo -e "$title"
+      printf '%b\n' "$title"
 
-      echo -e "$(render_formatted_branches "$branches" "$counted_and_formatted_branches" "$verbose")"
+      printf '%b\n' "$(render_formatted_branches "$branches" "$counted_and_formatted_branches" "$verbose")"
     fi
 	fi
 }
@@ -128,7 +128,7 @@ function render_branches_title {
   local number_of_branches="$(count "$branches")"
   [ "$number_of_branches" -eq 1 ] && local pluralized_branch_word="branch" || local pluralized_branch_word="branches"
 
-  echo -e "$(tput smul)$(tput bold)$color$number_of_branches $branches_group_name$(tput rmul) $pluralized_branch_word$(tput sgr0)"
+  printf '%b\n' "$(tput smul)$(tput bold)$color$number_of_branches $branches_group_name$(tput rmul) $pluralized_branch_word$(tput sgr0)"
 }
 
 function render_branches {
@@ -219,41 +219,43 @@ function show_fluxo {
 
 	
   if [ $show_unexistent -eq 1 ]; then
-    local unexistent_fluxo_branches="$(get_unexistent_fluxo_branches)"
+    local unexistent_fluxo_branches
+    unexistent_fluxo_branches="$(_lib_run get_unexistent_fluxo_branches)"
 
-    local number_of_unexistent_fluxo_branches="$(count "$unexistent_fluxo_branches")"
+    local number_of_unexistent_fluxo_branches
+    number_of_unexistent_fluxo_branches="$(_lib_run count "$unexistent_fluxo_branches")"
     
     if [ "$number_of_unexistent_fluxo_branches" -gt 0 ]; then
       if [ $raw -eq 0 ]; then
         local unexistent_view="$(
-          echo -e "$(view_errorline 'WARNING') $(($number_of_unexistent_fluxo_branches)) unexistent branches present in \`_fluxo_branches\` file:"
+          printf '%b\n' "$(view_errorline 'WARNING') $(($number_of_unexistent_fluxo_branches)) unexistent branches present in \`_fluxo_branches\` file:"
           echo
-          echo -e "$unexistent_fluxo_branches" | xargs -I {} echo "$(tput setaf 1 && tput bold)•$(tput sgr0) {}"
+          printf '%b\n' "$unexistent_fluxo_branches" | xargs -I {} echo "$(tput setaf 1 && tput bold)•$(tput sgr0) {}"
           echo
-          echo -e "$(view_errorline 'WARNING') Their names may be mispelled or those branches are not created nor pulled from remote yet."
+          printf '%b\n' "$(view_errorline 'WARNING') Their names may be mispelled or those branches are not created nor pulled from remote yet."
         )"
       else
-        local unexistent_view="$(echo -e "$unexistent_fluxo_branches")"
+        local unexistent_view="$(printf '%b\n' "$unexistent_fluxo_branches")"
       fi
     fi
   fi
 
   if [ $show_existent -eq 1 ]; then
-    local existent_branches="$(get_existent_fluxo_branches)"
+    local existent_branches="$(_lib_run get_existent_fluxo_branches)"
     local existent_view="$(render_branches "fluxo" "$existent_branches" "$format" "$verbose" "$raw")"
   fi
 
   if [ $show_unknow -eq 1 ]; then 
-    local unknown_to_fluxo_branches="$(get_unknown_branches)"
+    local unknown_to_fluxo_branches="$(_lib_run get_unknown_branches)"
     local unknown_to_fluxo_view="$(render_branches "unknown" "$unknown_to_fluxo_branches" "$format" "$verbose" "$raw" "$(tput setaf 5)")"
   fi
 
   if [ $show_drafts -eq 1 ]; then
-    local known_branches="$(get_existent_fluxo_branches)"
-    local unknown_to_fluxo_branches="$(get_unknown_branches)"
+    local known_branches="$(_lib_run get_existent_fluxo_branches)"
+    local unknown_to_fluxo_branches="$(_lib_run get_unknown_branches)"
 
-    if [ -n "$from_branch_arg" ] && [ -z "$(filter_branches_in "$known_branches" "$from_branch_arg")" ]; then
-      [ $raw -eq 0 ] && echo -e "Can't show drafts from '$from_branch_arg', because there isn't a fluxo branch named '$from_branch_arg'"
+    if [ -n "$from_branch_arg" ] && [ -z "$(_lib_run filter_branches_in "$known_branches" "$from_branch_arg")" ]; then
+      [ $raw -eq 0 ] && printf '%b\n' "Can't show drafts from '$from_branch_arg', because there isn't a fluxo branch named '$from_branch_arg'"
       exit 1
     fi
 
@@ -312,16 +314,16 @@ function show_fluxo {
       done
 
       if [ -n "$all_draft_branches" ]; then
-        local drafts_view_body="$(echo -e "${drafts_view_inverted%%\\n}" | awk '{a[i++]=$0} END {for (j=i-1; j>=0;) print a[j--] }')"
+        local drafts_view_body="$(printf '%b\n' "${drafts_view_inverted%%\\n}" | awk '{a[i++]=$0} END {for (j=i-1; j>=0;) print a[j--] }')"
       elif [ -z "$from_branch_arg" ]; then
         [ $raw -eq 0 ] && local drafts_view_body="No draft branches anywhere"
       fi
       
       if [ $raw -eq 1 ]; then
-        echo -e "$drafts_view_body"
+        printf '%b\n' "$drafts_view_body"
       else
         local drafts_view_title="$(render_branches_title "draft" "$all_draft_branches" $(tput setaf 5))"
-        echo -e "$drafts_view_title\\n\\n$(echo -e "$drafts_view_body" | sed 's/^/   /')"
+        printf '%b\n' "$drafts_view_title\\n\\n$(printf '%b\n' "$drafts_view_body" | sed 's/^/   /')"
       fi
     )"
   fi
@@ -330,11 +332,11 @@ function show_fluxo {
   
   if [ $raw -eq 1 ]; then
     if [ "$(count "$view")" -gt 0 ]; then
-      echo -e "$view" | less -XRF
+      printf '%b\n' "$view" | less -XRF
     fi
   else
     echo
-    echo -e "$view" | less -XRF
+    printf '%b\n' "$view" | less -XRF
     echo
   fi
 }

@@ -43,12 +43,14 @@ function analyze {
     local failed_message="$4"
 
     local result=""
-    local result_status=1
-
-    if ! result="$($function_name)"; then
+    
+    _error_handling_ignore_next_warning
+    if ! result="$($function_name)" ; then
+        _error_handling_reset_warning
         current_error_count=$(( current_error_count + 1 ))
         printf '%s\n' "$failed_message"
     else
+        _error_handling_reset_warning
         printf '%s\n' "$success_message"
     fi
 
@@ -60,10 +62,13 @@ function analyze {
 }
 
 function unexistent_branches {
-    local unexistent_branches="$(get_unexistent_fluxo_branches)"
+    local unexistent_branches
 
-    if [ ! -z "$unexistent_branches" ]; then
-        printf '%s\n' "$(get_unexistent_fluxo_branches | sed 's/^/    • /')"
+    if ! unexistent_branches="$(_lib_run get_unexistent_fluxo_branches)"; then
+        printf '%s\n' "$unexistent_branches"
+        return $ERROR
+    elif [ ! -z "$unexistent_branches" ]; then
+        printf '%s\n' "$unexistent_branches" | sed 's/^/    • /'
         return $ERROR
     else
         return $OK
@@ -71,7 +76,8 @@ function unexistent_branches {
 }
 
 function branches_commits_sync_status {
-    local known_branches="$(get_existent_fluxo_branches | grep -v '_fluxo')"
+    local known_branches
+    known_branches="$(_lib_run get_existent_fluxo_branches | grep -v '_fluxo')"
 
     local branches_sync_status=0
 
@@ -82,7 +88,7 @@ function branches_commits_sync_status {
         local branch="${known_branches[index]}"
         local previous_branch="${known_branches[index-1]}"
 
-        local number_of_commits="$(count "$(git log --no-merges --format="%h" $previous_branch ^$branch)")"
+        local number_of_commits="$(_lib_run count "$(git log --no-merges --format="%h" $previous_branch ^$branch)")"
         if [ $number_of_commits -gt 0 ]; then
             (( branches_sync_status++ ))
 

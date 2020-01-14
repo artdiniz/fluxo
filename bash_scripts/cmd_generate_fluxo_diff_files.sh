@@ -175,7 +175,7 @@ function generate_fluxo_diff_files {
 
         local diff_file_name="$tmp_folder/$(printf %0"$digits"d $i)-$current_branch.diff"
 
-        printf '%b\n' "$(diff_fluxo_branches "$previous_branch\\n$current_branch")" 2>> /dev/null 1>> "$diff_file_name"
+        printf '%b\n' "$(_lib_run diff_fluxo_branches "$previous_branch\\n$current_branch")" 2>> /dev/null 1>> "$diff_file_name"
     done
 
     if [ -z "$output_directory" ]; then

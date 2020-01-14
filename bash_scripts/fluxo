@@ -1,10 +1,8 @@
 #!/usr/bin/env bash
-set -Ee
 
-function err_report {
-    printf '%b\n' "Error at line $1." "Command: $2"
-}
-trap 'err_report $LINENO "$FLUXO_COMMAND"' ERR
+_error_handling_current_command="$(basename "$0") $@"
+. $(cd "$(dirname "$0")" && pwd)"/_error_handling.sh"
+. $(cd "$(dirname "$0")" && pwd)"/_lib_run.sh"
 
 FLUXO_HELP_MESSAGE="\
 GIT-FLUXO
@@ -26,20 +24,11 @@ $(tput bold)FLUXO COMMANDS$(tput sgr0)
   <doctor | dr>        Check fluxo health (Are steps synchronized?)
 "
 
-. $(cd "$(dirname "$0")" && pwd)"/lib_util.sh"
-. $(cd "$(dirname "$0")" && pwd)"/lib_get_branches.sh"
-. $(cd "$(dirname "$0")" && pwd)"/lib_view.sh"
-. $(cd "$(dirname "$0")" && pwd)"/lib_navigate_to_git_repository_root.sh"
-. $(cd "$(dirname "$0")" && pwd)"/lib_read_fluxo_file.sh"
-. $(cd "$(dirname "$0")" && pwd)"/lib_style.sh"
-
 function fluxo_print_usage {
     echo -ne "\n$FLUXO_HELP_MESSAGE\n"
 }
 
 navigate_to_git_repository_root
-
-FLUXO_COMMAND="$(basename "$0") $@"
 
 case "$1" in
 -h|--help)
@@ -49,27 +38,27 @@ case "$1" in
 show|s)
     shift
     . $(cd "$(dirname "$0")" && pwd)"/cmd_show_fluxo.sh"
-    show_fluxo "$@"
+    _lib_run show_fluxo "$@"
     ;;
 drafts|dt)
     . $(cd "$(dirname "$0")" && pwd)"/cmd_show_fluxo.sh"
     shift
-    show_fluxo --drafts "$@"
+    _lib_run show_fluxo --drafts "$@"
     ;;
 diff|d)
     shift
     . $(cd "$(dirname "$0")" && pwd)"/cmd_generate_fluxo_diff_files.sh"
-    generate_fluxo_diff_files "$@"
+    _lib_run generate_fluxo_diff_files "$@"
     ;;
 rebase|r)
     shift
     . $(cd "$(dirname "$0")" && pwd)"/cmd_rebase_fluxo.sh"
-    rebase_fluxo "$@"
+    _lib_run rebase_fluxo "$@"
     ;;
 doctor|dr)
     shift
     . $(cd "$(dirname "$0")" && pwd)"/cmd_fluxo_doctor.sh"
-    fluxo_doctor "$@"
+    _lib_run fluxo_doctor "$@"
     ;;
 *)
     fluxo_print_usage

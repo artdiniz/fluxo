@@ -3,9 +3,13 @@
 function diff_fluxo_branches {
     local branches="$(printf %b "$1")"
 
-    local root_dir="$(read_fluxo_file_with_cache "_fluxo_root" "_fluxo")"
-    local ignored_files="$(read_fluxo_file_with_cache "_fluxo_ignore" "_fluxo")"
-    local change_only_files=$(read_fluxo_file_with_cache "_fluxo_change_only" "_fluxo")
+    local root_dir="" 
+    local ignored_files="" 
+    local change_only_files=""
+
+    _lib_run read_fluxo_file_with_cache "_fluxo_root" "_fluxo" root_dir
+    _lib_run read_fluxo_file_with_cache "_fluxo_ignore" "_fluxo" ignored_files
+    _lib_run read_fluxo_file_with_cache "_fluxo_change_only" "_fluxo" change_only_files
     
     local exclude_ignored_diff_args="$(printf '%b\n' "$ignored_files" | xargs -I %% echo "':(exclude,top)%%'" | tr '\n' ' ')"
     local exclude_change_only_files_diff_arg="$(printf '%b\n' "$change_only_files" | xargs -I %% echo "':(exclude,top)%%'" | tr '\n' ' ')"
