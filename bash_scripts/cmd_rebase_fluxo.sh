@@ -170,11 +170,11 @@ function rebase_fluxo {
     all_involved_branches=`git log --format=%s refs/hidden/octomerge -1`
     all_involved_branches="${all_involved_branches#merging }"
     
-    ordered_affected_branches="$(echo -ne "$all_involved_branches" | tr ' ' '\n' | tail -n +2)"
+    ordered_affected_branches="$(printf '%b' "$all_involved_branches" | tr ' ' '\n' | tail -n +2)"
 
-    new_commits_branch="$(echo -ne "$all_involved_branches" | tr ' ' '\n' | sed -n 1p)"
-    next_branch="$(echo -ne "$ordered_affected_branches" | sed -n 1p)"
-      
+    new_commits_branch="$(printf '%b' "$all_involved_branches" | tr ' ' '\n' | sed -n 1p)"
+    next_branch="$(printf '%b' "$ordered_affected_branches" | sed -n 1p)"
+
     echo
     print_status_message
     echo
@@ -256,7 +256,7 @@ function rebase_fluxo {
   # Creating $commitsDistance array.
   #   Each position has the distance between the top rebased commit from one branch to another
   commitsDistanceString=$(
-    echo -ne "$ordered_affected_branches" | 
+    printf '%b' "$ordered_affected_branches" | 
     awk '{OFS="";}NR>1{print "git log --no-merges --format=%h " "\\\47"$1"\\\47 ^\\\47"last"\\\47 | wc -l | xargs"} {last=$1}' |
     xargs -I {} bash -c '{}'
   )
@@ -306,14 +306,14 @@ function rebase_fluxo {
 
     local old_branch_head_commit_message old_branch_head_commit_message_first_line
     old_branch_head_commit_message="$(git show --format=%B $branch)"
-    old_branch_head_commit_message_first_line="$(printf "%s" "$old_branch_head_commit_message" | sed -n 1p)"
+    old_branch_head_commit_message_first_line="$(printf '%s' "$old_branch_head_commit_message" | sed -n 1p)"
 
     local new_branch_head_hash
     new_branch_head_hash="$(git show --format=%h ${new_commit_list[index - 1]} | sed -n 1p)"
 
     local new_branch_head_commit_message new_branch_head_commit_message_first_line
     new_branch_head_commit_message="$(git show --format=%B ${new_commit_list[index - 1]})"
-    new_branch_head_commit_message_first_line="$(printf "%s" "$new_branch_head_commit_message" | sed -n 1p)"
+    new_branch_head_commit_message_first_line="$(printf '%s' "$new_branch_head_commit_message" | sed -n 1p)"
 
 
     if [ "$old_branch_head_commit_message" != "$new_branch_head_commit_message" ]; then
