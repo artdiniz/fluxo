@@ -313,7 +313,7 @@ function rebase_fluxo {
 
     local new_branch_head_commit_message new_branch_head_commit_message_first_line
     new_branch_head_commit_message="$(git show --format=%B ${new_commit_list[index - 1]})"
-    new_branch_head_commit_message_first_line="$(printf "%s" "$old_branch_head_commit_message" | sed -n 1p)"
+    new_branch_head_commit_message_first_line="$(printf "%s" "$new_branch_head_commit_message" | sed -n 1p)"
 
 
     if [ "$old_branch_head_commit_message" != "$new_branch_head_commit_message" ]; then
