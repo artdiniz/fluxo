@@ -75,6 +75,26 @@ function unexistent_branches {
     fi
 }
 
+function _print_new_commit_for_sync_status {
+    local _new_commit_hash="$1"
+
+    local new_commit_log=$(
+    git show $_new_commit_hash --no-patch \
+        --pretty=format:"– $(tput setaf 6)%h$(tput sgr0)$(tput bold) by $(tput sgr0)%aN (%cr)%n%n  Commit message: %B%n"
+    )
+
+    local new_commit_log_info="$(printf %s "$new_commit_log" | sed -n 1p)"
+    
+    local new_commit_log_message="$(printf %s "$new_commit_log" | tail -n +3)"
+    local new_commit_log_message_first_line="$(printf %s "$new_commit_log_message" | sed -n 1p)"
+    local new_commit_log_message_rest="$(printf %s "$new_commit_log_message" | tail -n +2)"
+
+    printf %s "$new_commit_log_info" | sed 's/^/        /'
+    printf %s "$new_commit_log_message_first_line" | sed 's/^/        /'
+    printf %s "$new_commit_log_message_rest" | sed "s/^/                        $(style '\\033[38;5;254m' '|') /"
+    printf '\n'
+}
+
 function branches_commits_sync_status {
     local known_branches
     known_branches="$(_lib_run get_existent_fluxo_branches | grep -v '_fluxo')"
@@ -88,21 +108,18 @@ function branches_commits_sync_status {
         local branch="${known_branches[index]}"
         local previous_branch="${known_branches[index-1]}"
 
-        local number_of_commits="$(_lib_run count "$(git log --no-merges --format="%h" $previous_branch ^$branch)")"
+        local new_commits="$(git log --no-merges --format="%h" $previous_branch ^$branch)"
+
+        local number_of_commits="$(_lib_run count "$new_commits")"
         if [ $number_of_commits -gt 0 ]; then
             (( branches_sync_status++ ))
 
-            local new_commits_log=$(
-            git log --no-merges \
-                --format="– $(tput setaf 6)%h$(tput sgr0)$(tput bold) by $(tput sgr0)%aN (%cr)%n%n  Commit message: %B%n" \
-                $previous_branch ^$branch
-            )
 
-            local new_commits_log_info="$(printf %s "$new_commits_log" | sed -n 1p)"
-            
-            local new_commits_log_message="$(printf %s "$new_commits_log" | tail -n +3)"
-            local new_commits_log_message_first_line="$(printf %s "$new_commits_log_message" | sed -n 1p)"
-            local new_commits_log_message_rest="$(printf %s "$new_commits_log_message" | tail -n +2)"
+            local new_commits_logs=""
+
+            while IFS= read -r new_commit_hash; do
+                new_commits_logs+="$(_print_new_commit_for_sync_status "$new_commit_hash")\\n\\n"
+            done <<< "$(printf '%s' "$new_commits")"
 
             local pluralized_commit_word
             local pluralized_commit_exists_word
@@ -113,13 +130,12 @@ function branches_commits_sync_status {
                 pluralized_commit_word="commits"
                 pluralized_commit_exists_word="existem"
             fi
-            
+
             echo
             echo "$( tput setaf 6)$( tput smul)$( tput bold)$number_of_commits $pluralized_commit_word$(tput sgr0) da branch $(tput setaf 5)$(tput smul)$(tput bold)$previous_branch$(tput sgr0) não $pluralized_commit_exists_word na branch $(tput setaf 5)$(tput smul)$(tput bold)$branch$(tput sgr0)"
             echo
-            printf %s "$new_commits_log_info" | sed 's/^/        /'
-            printf %s "$new_commits_log_message_first_line" | sed 's/^/        /'
-            printf %s "$new_commits_log_message_rest" | sed 's/^/                        | /'
+
+            printf "%b\n" "$new_commits_logs"
             
             echo
             echo "Execute o seguinte comando:"
