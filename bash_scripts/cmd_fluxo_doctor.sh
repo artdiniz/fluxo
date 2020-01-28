@@ -98,10 +98,10 @@ function branches_commits_sync_status {
                 $previous_branch ^$branch
             )
 
-            local new_commits_log_info="$(printf %s "$new_commits_log" | head -n1)"
+            local new_commits_log_info="$(printf %s "$new_commits_log" | sed -n 1p)"
             
             local new_commits_log_message="$(printf %s "$new_commits_log" | tail -n +3)"
-            local new_commits_log_message_first_line="$(printf %s "$new_commits_log_message" | head -n1)"
+            local new_commits_log_message_first_line="$(printf %s "$new_commits_log_message" | sed -n 1p)"
             local new_commits_log_message_rest="$(printf %s "$new_commits_log_message" | tail -n +2)"
 
             local pluralized_commit_word

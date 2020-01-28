@@ -87,7 +87,7 @@ function print_status_message {
       $new_commits_branch ^$next_branch
   )
 
-  local new_commits_log_first_line="$(echo -ne "$new_commits_log" | head -n1)"
+  local new_commits_log_first_line="$(echo -ne "$new_commits_log" | sed -n 1p)"
   local new_commits_log_rest="$(echo -ne "$new_commits_log" | tail -n +2)"
 
 PRE_CONFIRM_STATUS_MESSAGE="\
@@ -172,8 +172,8 @@ function rebase_fluxo {
     
     ordered_affected_branches="$(echo -ne "$all_involved_branches" | tr ' ' '\n' | tail -n +2)"
 
-    new_commits_branch="$(echo -ne "$all_involved_branches" | tr ' ' '\n' | head -n1)"
-    next_branch="$(echo -ne "$ordered_affected_branches" | head -n1)"
+    new_commits_branch="$(echo -ne "$all_involved_branches" | tr ' ' '\n' | sed -n 1p)"
+    next_branch="$(echo -ne "$ordered_affected_branches" | sed -n 1p)"
       
     echo
     print_status_message
@@ -300,14 +300,23 @@ function rebase_fluxo {
 
   for (( index=$rebased_length ; index>0 ; index-- )) ; do
     local branch=${branches_list[rebased_length - index]}
-    local old_branch_head_hash="$(git rev-parse --short $branch)"
-    local old_branch_head_commit_message_first_line="$(git show --format="%B" $branch | head -n1)"
+    
+    local old_branch_head_hash
+    old_branch_head_hash="$(git rev-parse --short $branch)"
 
-    local new_branch_head_hash="$(git show --format=%h ${new_commit_list[index - 1]} | head -n1)"
-    local new_branch_head_commit_message_first_line="$(git show --format="%B" ${new_commit_list[index - 1]} | head -n1)"
+    local old_branch_head_commit_message old_branch_head_commit_message_first_line
+    old_branch_head_commit_message="$(git show --format=%B $branch)"
+    old_branch_head_commit_message_first_line="$(printf "%s" "$old_branch_head_commit_message" | sed -n 1p)"
+
+    local new_branch_head_hash
+    new_branch_head_hash="$(git show --format=%h ${new_commit_list[index - 1]} | sed -n 1p)"
+
+    local new_branch_head_commit_message new_branch_head_commit_message_first_line
+    new_branch_head_commit_message="$(git show --format=%B ${new_commit_list[index - 1]})"
+    new_branch_head_commit_message_first_line="$(printf "%s" "$old_branch_head_commit_message" | sed -n 1p)"
 
 
-    if [ "$old_branch_head_commit_message_first_line" != "$new_branch_head_commit_message_first_line" ]; then    
+    if [ "$old_branch_head_commit_message" != "$new_branch_head_commit_message" ]; then
       (( rebase_integrity_status++ ))
       local status_message="$(tput setaf 1)x"
     else
@@ -339,8 +348,8 @@ function rebase_fluxo {
     local branch=${branches_list[rebased_length - index]}
 
     local old_branch_head_hash="$(git rev-parse --short $branch)"
-    local new_branch_head_hash="$(git show --format=%h ${new_commit_list[index - 1]} | head -n1)"
-    local new_branch_head_full_hash="$(git show --format=%H ${new_commit_list[index - 1]} | head -n1)"
+    local new_branch_head_hash="$(git show --format=%h ${new_commit_list[index - 1]} | sed -n 1p)"
+    local new_branch_head_full_hash="$(git show --format=%H ${new_commit_list[index - 1]} | sed -n 1p)"
     
     git branch -f $branch $new_branch_head_full_hash
     echo "Rebased $branch | $old_branch_head_hash -> $new_branch_head_hash"
