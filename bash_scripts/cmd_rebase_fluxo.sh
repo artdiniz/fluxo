@@ -255,38 +255,30 @@ function rebase_fluxo {
 
   # Creating $commitsDistance array.
   #   Each position has the distance between the top rebased commit from one branch to another
-  commitsDistanceString=$(
-    printf '%b' "$ordered_affected_branches" | 
-    awk '{OFS="";}NR>1{print "git log --no-merges --format=%h " "\\\47"$1"\\\47 ^\\\47"last"\\\47 | wc -l | xargs"} {last=$1}' |
-    xargs -I {} bash -c '{}'
-  )
-  IFS=$'\n'; commitsDistance=($commitsDistanceString); commitsDistanceBackwards=($commitsDistanceString); unset IFS;
 
-  # Reversing $commitsDistance because 
-  #   the last distance in it is the distance between HEAD and the nearest branch top rebased commit
-  length=$(echo "$commitsDistanceString"| wc -l | xargs)
-  for (( idx=$length ; idx>0 ; idx-- )) ; do
-    commitsDistanceBackwards[$(($length - $idx))]=$(echo "${commitsDistance[(idx - 1)]}")
-  done
+  _number_of_commits_between_affected_branches_backwards="$(
+    local _last_affected_branch
+    while IFS= read -r _affected_branch; do
+      if [ ! -z "$_last_affected_branch" ]; then
+        printf '%b\n' "$(git log --no-merges --format=%h "$_affected_branch" ^"$_last_affected_branch" | wc -l | xargs)"
+      fi
+      _last_affected_branch="$_affected_branch"
+    done <<<  "$(printf '%b' "$ordered_affected_branches")"
+  )"
+
+  _number_of_commits_between_affected_branches="$(_reverse "$_number_of_commits_between_affected_branches_backwards")"
 
   # Getting commits distance from octomerge HEAD (and not from one branch to another), 
-  #   by summing de distances in the $commitsDistanceBackwards array
-  for index in ${!commitsDistanceBackwards[@]}; do
-    currentValue=$(echo "${commitsDistanceBackwards[index]}")
-    if [ $index != 0 ]; then
-      previous_position=$(($index - 1))
-      previousValue=$(echo "${commitsDistanceBackwards[previous_position]}")
-
-      commitsDistanceBackwards[$index]=$(($currentValue + $previousValue))
-    else
-      commitsDistanceBackwards[$index]=$(($currentValue + 2))
-    fi
-  done
+  #   by summing de distances in $_number_of_commits_between_affected_branches
+  local _total_distance_from_top=2
+  local _distances_from_octomerge_top="$_total_distance_from_top\\n"
+  while IFS= read -r _distance; do
+    _total_distance_from_top=$(($_total_distance_from_top + $_distance))
+    _distances_from_octomerge_top+="$_total_distance_from_top\\n"
+  done <<< "$(printf '%b' "$_number_of_commits_between_affected_branches")"
 
   new_commit_list=$(
-    echo `git log --topo-order --format='%H' | head -n+2 | tail -n1` &&
-    echo -ne "${commitsDistanceBackwards[@]}" |
-    tr ' ' '\n' | 
+    printf '%b' "$_distances_from_octomerge_top" |
     xargs -I {} bash -c "git log --topo-order --format='%H' | head -n +{} | tail -n1"
   )
 
@@ -305,16 +297,15 @@ function rebase_fluxo {
     old_branch_head_hash="$(git rev-parse --short $branch)"
 
     local old_branch_head_commit_message old_branch_head_commit_message_first_line
-    old_branch_head_commit_message="$(git show --format=%B $branch)"
+    old_branch_head_commit_message="$(git show --no-patch --pretty=format:%B $branch)"
     old_branch_head_commit_message_first_line="$(printf '%s' "$old_branch_head_commit_message" | sed -n 1p)"
 
     local new_branch_head_hash
-    new_branch_head_hash="$(git show --format=%h ${new_commit_list[index - 1]} | sed -n 1p)"
+    new_branch_head_hash="$(git show --no-patch --pretty=format:%h ${new_commit_list[index - 1]} | sed -n 1p)"
 
     local new_branch_head_commit_message new_branch_head_commit_message_first_line
-    new_branch_head_commit_message="$(git show --format=%B ${new_commit_list[index - 1]})"
+    new_branch_head_commit_message="$(git show --no-patch --pretty=format:%B ${new_commit_list[index - 1]})"
     new_branch_head_commit_message_first_line="$(printf '%s' "$new_branch_head_commit_message" | sed -n 1p)"
-
 
     if [ "$old_branch_head_commit_message" != "$new_branch_head_commit_message" ]; then
       (( rebase_integrity_status++ ))
