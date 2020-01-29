@@ -138,6 +138,27 @@ fi
   echo -e "$PRE_CONFIRM_STATUS_MESSAGE"
 }
 
+
+function _exit_or_try_to_auto_solve_if_conflict {
+  local _rebase_status="$1"
+  if [ $_rebase_status -gt 0 ]; then
+    if [ $_rebase_status -eq 129 ]; then
+      # git cli usage/invalid parameter error must exit early 
+      #   to prevent an infinite loop if this script execs a wrong rebase comand somewhere
+      exit 129
+    elif [ -z "$(git diff --name-only --cached)" ] && [ -z "$(git diff --name-only)" ]; then
+      local _commit_message="$(cat .git/rebase-merge/message)"
+      printf '\n\n%b\n\n' "[fluxo] Conflict automatically solved. Empty commit was allowed."
+
+      git commit --allow-empty -m "$_commit_message"
+      _lib_run rebase_fluxo --continue
+      exit $?
+    else
+      exit $_rebase_status
+    fi
+  fi
+}
+
 function rebase_fluxo {
   total_argc=$#
   while test $# -gt 0
@@ -164,9 +185,15 @@ function rebase_fluxo {
 
   if [ $# != 2 ]; then
     [ x$action = x ] && usage
+
+    local _rebase_status
     # Pass the action through to git-rebase.
-    git rebase --$action ||
-      exit $? # if it drops to shell again, stop again.
+    git rebase --$action
+    _rebase_status=$?
+
+    # if it conflicts again, stop or try to solve conflict, again.
+    _exit_or_try_to_auto_solve_if_conflict $_rebase_status
+
     all_involved_branches=`git log --format=%s refs/hidden/octomerge -1`
     all_involved_branches="${all_involved_branches#merging }"
     
@@ -235,9 +262,14 @@ function rebase_fluxo {
       # # This creates a hidden-branch called octomerge that has its HEAD at the octomerge commit created above
       git update-ref refs/hidden/octomerge $octomerge || die "couldn't create branch"
       
+
+      local _rebase_status
       # # The money shot: rebase the octomerge onto the new_commits_branch.
-      git rebase --preserve-merge $new_commits_branch refs/hidden/octomerge ||
-      exit $? # if the rebase drops to shell, stop here.
+      git rebase --keep-empty --preserve-merge $new_commits_branch refs/hidden/octomerge
+      _rebase_status=$?
+
+      # if it conflicts, stop or try to solve conflict.
+      _exit_or_try_to_auto_solve_if_conflict $_rebase_status
     fi
   fi
 
@@ -268,8 +300,10 @@ function rebase_fluxo {
 
   _number_of_commits_between_affected_branches="$(_reverse "$_number_of_commits_between_affected_branches_backwards")"
 
-  # Getting commits distance from octomerge HEAD (and not from one branch to another), 
-  #   by summing de distances in $_number_of_commits_between_affected_branches
+  # Getting every afrfected branch HEAD commit distance from octomerge HEAD (and not from one branch to another), 
+  #   first branch HEAD commit is always the second commit (first is the octomerg commmit)
+  #   the next branches HEAD distance are found by sequentially summing de distances in $_number_of_commits_between_affected_branches
+  #   this results in $_distances_from_octomerge_top
   local _total_distance_from_top=2
   local _distances_from_octomerge_top="$_total_distance_from_top\\n"
   while IFS= read -r _distance; do
