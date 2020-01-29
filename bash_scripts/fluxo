@@ -6,7 +6,8 @@ _FLUXO_SCRIPT_SYMLINK_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2
 
 _FLUXO_SCRIPTS_DIR="$(
     _relative_symlinked_dir="$( dirname "$(readlink "$_FLUXO_SCRIPT_SYMLINK_DIR/fluxo")" )"
-    cd "$_FLUXO_SCRIPT_SYMLINK_DIR/$_relative_symlinked_dir" >/dev/null 2>&1
+    cd "$_FLUXO_SCRIPT_SYMLINK_DIR" >/dev/null 2>&1
+    cd "$_relative_symlinked_dir" >/dev/null 2>&1
     pwd
 )"
 
