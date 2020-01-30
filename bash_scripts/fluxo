@@ -48,27 +48,27 @@ case "$1" in
     ;;
 show|s)
     shift
-    . $(cd "$(dirname "$0")" && pwd)"/cmd_show_fluxo.sh"
+    . "$_FLUXO_SCRIPTS_DIR/cmd_show_fluxo.sh"
     _lib_run show_fluxo "$@"
     ;;
 drafts|dt)
-    . $(cd "$(dirname "$0")" && pwd)"/cmd_show_fluxo.sh"
+    . "$_FLUXO_SCRIPTS_DIR/cmd_show_fluxo.sh"
     shift
     _lib_run show_fluxo --drafts "$@"
     ;;
 diff|d)
     shift
-    . $(cd "$(dirname "$0")" && pwd)"/cmd_generate_fluxo_diff_files.sh"
+    . "$_FLUXO_SCRIPTS_DIR/cmd_generate_fluxo_diff_files.sh"
     _lib_run generate_fluxo_diff_files "$@"
     ;;
 rebase|r)
     shift
-    . $(cd "$(dirname "$0")" && pwd)"/cmd_rebase_fluxo.sh"
+    . "$_FLUXO_SCRIPTS_DIR/cmd_rebase_fluxo.sh"
     _lib_run rebase_fluxo "$@"
     ;;
 doctor|dr)
     shift
-    . $(cd "$(dirname "$0")" && pwd)"/cmd_fluxo_doctor.sh"
+    . "$_FLUXO_SCRIPTS_DIR/cmd_fluxo_doctor.sh"
     _lib_run fluxo_doctor "$@"
     ;;
 *)
