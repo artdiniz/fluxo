@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 
-_FLUXO_COMMAND="$(basename "$0}") $@"
+_FLUXO_COMMAND_NAME="$(basename "$0")"
+_FLUXO_COMMAND="$_FLUXO_COMMAND_NAME $@"
 
 _FLUXO_SCRIPT_SYMLINK_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 
@@ -11,41 +12,80 @@ _FLUXO_SCRIPTS_DIR="$(
 	pwd
 )"
 
-_error_handling_current_command="$(basename "$0") $@"
+_error_handling_current_command="$_FLUXO_COMMAND"
 . "$_FLUXO_SCRIPTS_DIR/_error_handling.sh"
 . "$_FLUXO_SCRIPTS_DIR/_lib_run.sh"
 
-FLUXO_HELP_MESSAGE="\
-GIT-FLUXO
+_HELP_TITLE="FLUXO"
 
-$(tput bold)USAGE$(tput sgr0)
+_HELP_USAGE="\
+  $_FLUXO_COMMAND_NAME <show | diff | rebase | doctor>
+  $_FLUXO_COMMAND_NAME <-h|--help>
+"
 
-  git fluxo <show | diff | rebase | doctor>
-  git fluxo -- <-h|--help>
-
+_HELP_DETAILS="\
 $(tput bold)ACTIONS$(tput sgr0)
-  
+
   -h | --help      Show detailed instructions
 
 $(tput bold)FLUXO COMMANDS$(tput sgr0)
 
-  <show | s>           Show branches orderes by fluxo
+  <show | s>           Show branches ordered by fluxo steps
   <diff | d>           Generate code diff files for each fluxo step
   <rebase | r>         Rebase after changing any fluxo previous steps
-  <doctor | dr>        Check fluxo health (Are steps synchronized?)
+  <doctor | dr>        Check fluxo project health (Are steps synchronized?)
 "
 
-function fluxo_print_usage {
-    echo -ne "\n$FLUXO_HELP_MESSAGE\n"
+function _help_create_message {
+	local _message_var_name
+	_message_var_name="$1"
+
+	IFS= read -d '' -r $_message_var_name
+}
+
+function _help_print_full_message {
+	local _message
+
+	_help_create_message _message <<-MESSAGE
+
+		$_HELP_TITLE
+
+		$(tput bold)USAGE$(tput sgr0)
+
+		$_HELP_USAGE
+
+		$_HELP_DETAILS
+
+	MESSAGE
+
+	printf '%b' "$_message" | less -XRF
+}
+
+function _help_print_usage_error_and_die {
+	local _invalid_command="$1"
+
+	local _message
+
+	_help_create_message _message <<-MESSAGE
+
+		Invalid command: "$_invalid_command"
+
+		$(tput bold)USAGE$(tput sgr0)
+		$_HELP_USAGE
+
+	MESSAGE
+
+	printf '%b' "$_message"
+	exit 129
 }
 
 navigate_to_git_repository_root
 
 case "$1" in
 -h|--help)
-    fluxo_print_usage | less -RF
-    exit $?
-    ;;
+	_lib_run _help_print_full_message
+	exit $?
+	;;
 show|s)
 	shift
 	. "$_FLUXO_SCRIPTS_DIR/cmd_show_fluxo.sh"
@@ -72,7 +112,6 @@ doctor|dr)
 	_lib_run fluxo_doctor "$@"
 	;;
 *)
-    fluxo_print_usage
-    exit 1
-    ;;
+	_lib_run _help_print_usage_error_and_die "$_FLUXO_COMMAND"
+	;;
 esac
