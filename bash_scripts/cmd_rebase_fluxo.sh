@@ -128,10 +128,10 @@ fi
 function _exit_or_try_to_auto_solve_if_conflict {
   local _rebase_status="$1"
   if [ $_rebase_status -gt 0 ]; then
-    if [ $_rebase_status -eq 129 ]; then
+    if [ $_rebase_status -eq 129 ] || [ $_rebase_status -eq 128 ]; then
       # git cli usage/invalid parameter error must exit early 
       #   to prevent an infinite loop if this script execs a wrong rebase comand somewhere
-      exit 129
+      exit $_rebase_status
     elif [ -z "$(git diff --name-only --cached)" ] && [ -z "$(git diff --name-only)" ]; then
       local _commit_message="$(cat .git/rebase-merge/message)"
       printf '\n\n%b\n\n' "[fluxo] Conflict automatically solved. Empty commit was allowed."
