@@ -1,6 +1,6 @@
 #!/usr/bin/env bash 
 
-. $(cd "$(dirname "$0")" && pwd)"/lib_style.sh"
+. "$_FLUXO_SCRIPTS_DIR/lib_style.sh"
 
 OK=0
 ERROR=1

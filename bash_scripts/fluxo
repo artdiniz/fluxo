@@ -5,10 +5,10 @@ _FLUXO_COMMAND="$(basename "$0}") $@"
 _FLUXO_SCRIPT_SYMLINK_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 
 _FLUXO_SCRIPTS_DIR="$(
-    _relative_symlinked_dir="$( dirname "$(readlink "$_FLUXO_SCRIPT_SYMLINK_DIR/fluxo")" )"
-    cd "$_FLUXO_SCRIPT_SYMLINK_DIR" >/dev/null 2>&1
-    cd "$_relative_symlinked_dir" >/dev/null 2>&1
-    pwd
+	_relative_symlinked_dir="$( dirname "$(readlink "$_FLUXO_SCRIPT_SYMLINK_DIR/fluxo")" )"
+	cd "$_FLUXO_SCRIPT_SYMLINK_DIR" >/dev/null 2>&1
+	cd "$_relative_symlinked_dir" >/dev/null 2>&1
+	pwd
 )"
 
 _error_handling_current_command="$(basename "$0") $@"
@@ -47,30 +47,30 @@ case "$1" in
     exit $?
     ;;
 show|s)
-    shift
-    . "$_FLUXO_SCRIPTS_DIR/cmd_show_fluxo.sh"
-    _lib_run show_fluxo "$@"
-    ;;
+	shift
+	. "$_FLUXO_SCRIPTS_DIR/cmd_show_fluxo.sh"
+	_lib_run show_fluxo "$@"
+	;;
 drafts|dt)
-    . "$_FLUXO_SCRIPTS_DIR/cmd_show_fluxo.sh"
-    shift
-    _lib_run show_fluxo --drafts "$@"
-    ;;
+	. "$_FLUXO_SCRIPTS_DIR/cmd_show_fluxo.sh"
+	shift
+	_lib_run show_fluxo --drafts "$@"
+	;;
 diff|d)
-    shift
-    . "$_FLUXO_SCRIPTS_DIR/cmd_generate_fluxo_diff_files.sh"
-    _lib_run generate_fluxo_diff_files "$@"
-    ;;
+	shift
+	. "$_FLUXO_SCRIPTS_DIR/cmd_generate_fluxo_diff_files.sh"
+	_lib_run generate_fluxo_diff_files "$@"
+	;;
 rebase|r)
-    shift
-    . "$_FLUXO_SCRIPTS_DIR/cmd_rebase_fluxo.sh"
-    _lib_run rebase_fluxo "$@"
-    ;;
+	shift
+	. "$_FLUXO_SCRIPTS_DIR/cmd_rebase_fluxo.sh"
+	_lib_run rebase_fluxo "$@"
+	;;
 doctor|dr)
-    shift
-    . "$_FLUXO_SCRIPTS_DIR/cmd_fluxo_doctor.sh"
-    _lib_run fluxo_doctor "$@"
-    ;;
+	shift
+	. "$_FLUXO_SCRIPTS_DIR/cmd_fluxo_doctor.sh"
+	_lib_run fluxo_doctor "$@"
+	;;
 *)
     fluxo_print_usage
     exit 1
