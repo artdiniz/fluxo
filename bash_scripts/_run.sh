@@ -1,8 +1,7 @@
 _HELP_TITLE="FLUXO"
 
 _HELP_USAGE="\
-  $_FLUXO_COMMAND_NAME <show | diff | rebase | doctor>
-  $_FLUXO_COMMAND_NAME <-h|--help>
+  <show | diff | rebase | doctor>
 "
 
 _HELP_DETAILS="\
@@ -20,11 +19,9 @@ $(tput bold)FLUXO COMMANDS$(tput sgr0)
 
 navigate_to_git_repository_root
 
+_parse_help_args "$1"
+
 case "$1" in
--h|--help)
-	_lib_run _help_print_full_message
-	exit $?
-	;;
 show|s)
 	shift
 	. "$_FLUXO_SCRIPTS_DIR/cmd_show_fluxo.sh"

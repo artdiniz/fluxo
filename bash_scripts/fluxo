@@ -3,7 +3,6 @@
 # Only global vars, imports and general setup is done here
 # Main code starts in ./_run.sh
 
-
 _FLUXO_COMMAND_NAME="$(basename "$0")"
 _FLUXO_COMMAND="$_FLUXO_COMMAND_NAME $@"
 

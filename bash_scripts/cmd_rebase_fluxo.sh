@@ -1,27 +1,23 @@
 #!/usr/bin/env bash
 
-FLUXO_REBASE_HELP_MESSAGE="\
-GIT-FLUXOREBASE
+_HELP_TITLE="FLUXO-REBASE"
 
-$(tput bold)USAGE$(tput sgr0)
-
-  git fluxo rebase <a-branch-da-aula-que-teve-mudancas> <a-branch-da-proxima-aula>
-  git fluxo rebase -h | --continue | --abort | --skip
-
-$(tput bold)ACTIONS$(tput sgr0)
-
-  -h               show detailed instructions
+_HELP_USAGE="\
+  rebase <a-branch-da-aula-que-teve-mudancas> <a-branch-da-proxima-aula>
+  rebase --continue | --abort | --skip
+"
+_HELP_OPTIONS="\
   --continue       continue
   --abort          abort and check out the original branch
   --skip           skip current patch and continue
+"
 
-$(tput bold)PARAMS$(tput sgr0)
-
+_HELP_PARAMS="\
   <a-branch-da-aula-que-teve-mudancas> A branch que foi modificada com novos commits
   <a-branch-da-proxima-aula> é a branch da aula seguinte à que foi modificada, caso a branch aula1 tenha sido modificada, é a branch da aula 2
 "
 
-HELP_WHY="\
+_HELP_OTHER="\
 $(tput bold)WHY?$(tput sgr0)
 
   Quando alteramos e commitamos o código de uma aula, no caso a aula 1, 
@@ -53,7 +49,6 @@ $(tput bold)WHY?$(tput sgr0)
   \`git rebase-fluxo aula1 aula2\` => Passa as mudanças da aula1 para a aula2 e para todas as aulas que vierem depois. 
 
   A ordem das branches é definida de maneira inteligente por esse comando
-
 "
 
 function wait_confirmation {
@@ -68,15 +63,6 @@ function wait_confirmation {
     fi
     exit
   fi
-}
-
-function print_full_usage {
-  echo -ne "\n$FLUXO_REBASE_HELP_MESSAGE\n$HELP_WHY"
-}
-
-function print_usage_and_die {
-  echo -ne "\n$FLUXO_REBASE_HELP_MESSAGE\n"
-  exit 1
 }
 
 function print_status_message {
@@ -159,36 +145,44 @@ function _exit_or_try_to_auto_solve_if_conflict {
   fi
 }
 
-function rebase_fluxo {
-  total_argc=$#
-  while test $# -gt 0
-  do
+function _parse_args {
+  local _action_var_name="$1"
+  local _new_commits_branch_var_name="$2"
+  local _next_branch_var_name="$3"
+
+  shift
+  shift
+  shift
+
+  local _args="$@"
+
+  if [ $# -eq 1 ]; then
     case "$1" in
-    -h|--help)
-      print_full_usage | less -XRF
-      clear
-      exit $?
-      ;;
-    --continue|--skip|--abort)
-      action=${1##--}
-      break
-      ;;
-    --)
-      shift
-      break
-      ;;
+      --continue|--skip|--abort)
+        eval "$_action_var_name='${1##--}'"
+        return
+        ;;
     esac
-    break
-  done
+  elif [ $# -eq 2 ]; then
+    eval "$_new_commits_branch_var_name='$1'"
+    eval "$_next_branch_var_name='$2'"
+    return
+  fi
 
-  test $# -eq 2 || [ x$action != x ] || print_usage_and_die
+  _lib_run _help_print_usage_error_and_die "$0 rebase $_args"
+}
 
-  if [ $# != 2 ]; then
-    [ x$action = x ] && usage
+function rebase_fluxo {
+  local _action_arg
+  local _new_commits_branch_arg _next_branch_arg
 
+  _parse_help_args "$1"
+  _parse_args _action_arg _new_commits_branch_arg _next_branch_arg "$@"
+
+  if [ ! -z "$_action_arg" ]; then
     local _rebase_status
     # Pass the action through to git-rebase.
-    git rebase --$action
+    git rebase --$_action_arg
     _rebase_status=$?
 
     # if it conflicts again, stop or try to solve conflict, again.
@@ -208,8 +202,8 @@ function rebase_fluxo {
     wait_confirmation
 
   else
-    new_commits_branch="$1"
-    next_branch="$2"
+    new_commits_branch="$_new_commits_branch_arg"
+    next_branch="$_next_branch_arg"
 
     fluxo_ordered_branches=$(get_existent_fluxo_branches)
 
@@ -225,10 +219,11 @@ function rebase_fluxo {
     unexistent_branches_count="$(count "$unexistent_branches")"
 
     if [ $unexistent_branches_count -gt 0 ]; then
-      echo -e "$(show_fluxo --unexistent)"
-      echo
-      echo "All branches must exist. Aborting rebase!"
-      echo
+      printf '%b\n' "$(view_errorline 'WARNING') $(($unexistent_branches_count)) unexistent branches present in \`_fluxo_branches\` file"
+      printf '%b\n' "$(view_errorline 'WARNING') run \"$_FLUXO_COMMAND_NAME show\" for more details"
+      printf '\n'
+      printf "All branches must exist. Aborting rebase!"
+      printf '\n'
       exit 1
     fi
 

@@ -14,6 +14,16 @@ function count {
 	printf '%s' "$count"
 }
 
+function _count_words {
+	local _to_be_counted="$1"
+
+  if [ ! -z "$_to_be_counted" ]; then
+	  printf '%s' "$_to_be_counted" | awk '{print NF}'
+  else
+    printf '0'
+  fi
+}
+
 function _reverse {
   local text="$1"
 

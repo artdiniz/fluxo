@@ -1,21 +1,25 @@
 #!/usr/bin/env bash
 
-FLUXO_SHOW_HELP_MESSAGE="\
-GIT-FLUXOSHOW
+_HELP_TITLE="FLUXO-SHOW"
 
-$(tput bold)USAGE$(tput sgr0)
+_HELP_USAGE="\
+  show
+  show [--existent | --unknown | --unexistent | --drafts] 
+  show [--format=<format-options>] 
+  show [-v | --verbose] 
+  show [--raw]
+"
 
-  git fluxo show
-  git fluxo show [--existent|--unknown|--unexistent|--drafts] [--format=<format-options>] [-v | --verbose] [--raw]
-
-$(tput bold)ACTIONS$(tput sgr0)
-
-  --help                                       show detailed instructions
+_HELP_OPTIONS="\
   --format=<format-options>                    <format-options> pattern passed to \`git for-each-ref\`;
   -v|--verbose                                 show info about remotes and unknown branches (branches that are not in fluxo);
   --existent|--unknown|--unexistent|--drafts   choose which kind of fluxo branches to show. Default is showing all of them;
   --raw                                        remove all titles and decoration from output. Perfect for piping and processing in ohter programs;
+"
 
+_HELP_PARAMS=""
+
+_HELP_OTHER="\
 $(tput bold)SAMPLE COMMANDS$(tput sgr0)
 
   - Shows last commit short hash before branch name:
@@ -24,16 +28,6 @@ $(tput bold)SAMPLE COMMANDS$(tput sgr0)
   - Shows list of full hashes for each branch HEAD commit
       git fls --format=\"%(objectname)\"
 "
-
-function print_fluxo_show_usage_and_die {
-  echo "Invalid arguments: $@"
-  printf '%b\n' "\n$FLUXO_SHOW_HELP_MESSAGE\n"
-  exit 1
-}
-
-function print_fluxo_show_usage {
-  printf '%b\n' "\n$FLUXO_SHOW_HELP_MESSAGE\n"
-}
 
 function get_branches_details {
 	local branches="$1"
@@ -144,6 +138,8 @@ function render_branches {
 }
 
 function show_fluxo {
+  _parse_help_args "$@"
+
   local verbose=0
   local raw=0
 
@@ -153,16 +149,6 @@ function show_fluxo {
   while test $# -gt 0
   do
     case "$1" in
-    show)
-      shift
-    ;;
-    --)
-      shift
-    ;;
-    -h|--help)
-      print_fluxo_show_usage | less -XRF
-      exit $?
-    ;;
     -v|--verbose)
       local verbose=1
       shift
@@ -172,11 +158,11 @@ function show_fluxo {
       shift
       if [ -z "$format" ]; then
         if [ -z "$1" ]; then 
-          print_fluxo_show_usage_and_die "$@"
+          _lib_run _help_print_usage_error_and_die "show $@"
         elif [ "${1##-}" == "$1" ]; then
           local format="$1"
         else
-          print_fluxo_show_usage_and_die "$@"
+          _lib_run _help_print_usage_error_and_die "show $@"
         fi
       else
         local format="${format##=}"
@@ -202,7 +188,7 @@ function show_fluxo {
       shift
     ;;
     *)
-      print_fluxo_show_usage_and_die "$@"
+      _lib_run _help_print_usage_error_and_die "show $@"
     ;;
     esac
   done
@@ -328,7 +314,7 @@ function show_fluxo {
     )"
   fi
 
-  local view="$(view_join "$unexistent_view" "$existent_view" "$unknown_to_fluxo_view" "$drafts_view")"
+  local view="$(_lib_run view_join "$unexistent_view" "$existent_view" "$unknown_to_fluxo_view" "$drafts_view")"
   
   if [ $raw -eq 1 ]; then
     if [ "$(count "$view")" -gt 0 ]; then
