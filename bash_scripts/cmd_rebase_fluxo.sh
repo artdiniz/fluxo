@@ -169,7 +169,7 @@ function _parse_args {
     return
   fi
 
-  _lib_run _help_print_usage_error_and_die "$0 rebase $_args"
+  _lib_run _help_print_usage_error_and_die "Invalid arguments: '$_args'"
 }
 
 function rebase_fluxo {
