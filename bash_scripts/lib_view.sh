@@ -8,21 +8,36 @@ function view_errordot {
 }
 
 function view_join {
-  local join_view=""
-  for view in "$@"; do
-    if [ "$view" != "" ]; then
-      local join_view="$(
-        echo "$join_view"
-        echo
-        echo "$view"
-      )"
-    fi
-  done
+	local join_view=""
+	for view in "$@"; do
+		if [ "$view" != "" ]; then
+		local join_view="$(
+			echo "$join_view"
+			echo
+			echo "$view"
+		)"
+		fi
+	done
 
-  join_view="${join_view##[[:space:]]}"
-  join_view="${join_view##[[:space:]]}"
+	join_view="${join_view##[[:space:]]}"
+	join_view="${join_view##[[:space:]]}"
 
-  echo -e "$join_view"
+	echo -e "$join_view"
+}
+
+function _view_join_if_not_empty {
+	local _result_var_name="$1"
+	shift
+
+	local _result=""
+
+	for _view in "$@"; do
+		if [ ! -z "$_view" ]; then
+			_result="$_result$_view"
+    	fi
+  	done
+
+	eval "$_result_var_name=\"\$_result\""
 }
 
 function view_git_for_each_ref {
