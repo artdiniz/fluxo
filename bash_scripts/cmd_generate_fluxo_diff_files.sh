@@ -4,26 +4,47 @@ _HELP_TITLE="FLUXO-DIFF"
 
 _HELP_USAGE="\
   diff 
-  diff [ <some-fluxo-branch> | -a | --all ]
-  diff [ <any-branch>..<any-other-branch> ]
-  diff ( -o | --output-files ) [<output-directory>]
+  diff <some-fluxo-branch> | <any-branch>..<any-other-branch>
+  diff -a | --all
 
-  diff [ ( -o | --output-files ) <output-directory> ] [ <some-fluxo-branch> | -a | --all ] [ <any-branch>..<any-other-branch> ]
+  diff ( -o | --output-folder ) <output-directory>
+  diff ( -o | --output-folder ) <output-directory> <some-fluxo-branch> | <any-branch>..<any-other-branch>
+  diff ( -o | --output-folder ) <output-directory> -a | --all
 "
 
 _HELP_PARAMS="\
   <some-fluxo-branch>
       is a fluxo branch you want to get the diff off. Defaults to current branch.
-      The '_fluxo_bnranches' file will be read to determine wich branch is the previous fluxo branch.
+      The '_fluxo_branches' file will be read to determine wich branch is the previous fluxo branch.
 
   <any-branch>..<any-other-branch>
-      is any set of branches you want to diff using _fluxo_* file rules
+      is any set of branches you want to diff using _fluxo_* file rules. Those branchs don't need to be fluxo branches.
 "
 
 _HELP_OPTIONS="\
   -a | --all                          diff all branches following '_fluxo_branches' file.
   -o | --output <output-directory>    generates diff files in <output-directory>.
 "
+
+_create_string_var _help_diff_scenarios <<-'SCENARIOS'
+  1) diff the current fluxo branch you are against its previous branch
+         $ diff
+
+  2) diff another fluxo branch against its previous branch
+         $ diff <some-fluxo-branch>
+
+  3) diff all fluxo branches against their previous branch in fluxo order
+         $ diff -a | --all
+
+  4) diff any 2 branches against each other (no need to be in fluxo order)
+         $ diff branch1..branch2
+SCENARIOS
+
+_create_string_var _HELP_OTHER <<-_HELP_OTHER
+	$(tput bold)DIFF SCENARIOS$(tput sgr0)
+
+	$_help_diff_scenarios
+_HELP_OTHER
 
 . "$_FLUXO_SCRIPTS_DIR/lib_diff_fluxo_branches.sh"
 
@@ -55,12 +76,12 @@ function _parse_args {
 
     while [ $# -gt 0 ]; do
         case "$1" in
-            -o|--output-files)
-                shift
-                if [ -z "$1" ]; then
-                    _lib_run _help_print_usage_error_and_die '--output-files needs the path to the folder'
+            -o|--output-folder)
+                if [ -z "$2" ]; then
+                  _lib_run _help_print_usage_error_and_die "'$1' option needs <output-directory> (the path where diff files will be created)"
                 fi
-                output_directory_arg="$1"
+                output_directory_arg="$2"
+                shift
                 shift
                 ;;
             -a|--all)
@@ -84,7 +105,16 @@ function _parse_args {
     fi
 
     if [ $_n_branch_args -gt 1 ]; then
-        local _error_message="$(printf '\n%s\n%s\n' "More than one branch argument provided" "To diff between to branches you must use the syntax: branch1..branch2")"
+				local _error_message
+
+				_create_string_var _error_message <<-MESSAGE
+					$_n_branch_args branches where provided as arguments: "$BRANCHES_ARGS"
+
+					Diff accepts only 1 branch argument. Here are all the valid diff scenarios:
+
+					  $_help_diff_scenarios
+				MESSAGE
+      
         _lib_run _help_print_usage_error_and_die "$_error_message"
     fi
 
