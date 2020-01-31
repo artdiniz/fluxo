@@ -5,7 +5,7 @@ _HELP_TITLE="FLUXO-SHOW"
 _HELP_USAGE="\
   show
   show [--existent | --unknown | --unexistent | --drafts] 
-  show [--format=<format-options>] 
+  show [--format=<format-options>] | [--format '<format-options>'] 
   show [-v | --verbose] 
   show [--raw]
 "
@@ -145,27 +145,32 @@ function show_fluxo {
 
   local show_types=""
 
+  local format
+
   total_argc=$#
   while test $# -gt 0
   do
     case "$1" in
     -v|--verbose)
-      local verbose=1
+      verbose=1
       shift
     ;;
     --format*)
-      local format="${1##--format}"
-      shift
-      if [ -z "$format" ]; then
-        if [ -z "$1" ]; then 
-          _lib_run _help_print_usage_error_and_die "show $@"
-        elif [ "${1##-}" == "$1" ]; then
-          local format="$1"
-        else
-          _lib_run _help_print_usage_error_and_die "show $@"
+      local _possible_format_value="${1##--format}"
+      if [ -z "$_possible_format_value" ]; then
+        # Format value is passed without equals sign --format format-value
+        shift
+        local _possible_format_value="$1"
+        if [ -z "$_possible_format_value" ]; then 
+          # Error: no format value provided
+          #   fluxo show ... --format 
+          #   fluxo show ... --format "" ...
+          _lib_run _help_print_usage_error_and_die "Empty '--format' value"
         fi
+        format="$_possible_format_value"
       else
-        local format="${format##=}"
+        # Format is passed with equals sign --format="format-value"
+        format="${_possible_format_value##=}"
       fi
       shift
     ;;
@@ -188,7 +193,7 @@ function show_fluxo {
       shift
     ;;
     *)
-      _lib_run _help_print_usage_error_and_die "show $@"
+      _lib_run _help_print_usage_error_and_die "Invalid option: '$1'"
     ;;
     esac
   done
