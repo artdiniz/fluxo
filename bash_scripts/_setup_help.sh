@@ -1,10 +1,3 @@
-function _create_string_var {
-	local _message_var_name
-	_message_var_name="$1"
-
-	IFS= read -d '' -r $_message_var_name
-}
-
 function _help_print_full_message {
 	local _message
 
