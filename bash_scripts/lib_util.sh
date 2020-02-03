@@ -24,10 +24,15 @@ function _count_words {
   fi
 }
 
-function _reverse {
-  local text="$1"
+function _reverse_lines {
+  local _text
+	if [ ! -z "$1" ]; then
+		_text="$1"
+	else
+		_create_string_var _text < /dev/stdin
+	fi
 
-  printf '%b' "$text" | sed -n '1! G;$ p;h'
+  printf '%b' "$_text" | sed -n '1! G;$ p;h'
 }
 
 function _create_string_var {
@@ -35,19 +40,5 @@ function _create_string_var {
 	_message_var_name="$1"
 
   IFS= read -rd '' "$_message_var_name" || [ $? -eq 1 ] && :
-
-  local _result_line_count="$(count "${!_message_var_name}")"
-
-  local _result="$( printf '%b' "${!_message_var_name}" )"
-
-  local _trimmed_result_line_count="$(count "$_result")"
-
-  local _newline_at_end_count=$(( $_result_line_count - $_trimmed_result_line_count - 1 ))
-
-  while [ $_newline_at_end_count -gt 0 ]; do
-    _result+='\n'
-    (( _newline_at_end_count-- ))
-  done
-
-  eval "$_message_var_name=\"\$_result\""
+  # eval "$_message_var_name=\"\$_result\""
 }

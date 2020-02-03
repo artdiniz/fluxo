@@ -293,7 +293,7 @@ function rebase_fluxo {
     done <<<  "$(printf '%b' "$ordered_affected_branches")"
   )"
 
-  _number_of_commits_between_affected_branches="$(_reverse "$_number_of_commits_between_affected_branches_backwards")"
+  _number_of_commits_between_affected_branches="$(_lib_run _reverse_lines "$_number_of_commits_between_affected_branches_backwards")"
 
   # Getting every afrfected branch HEAD commit distance from octomerge HEAD (and not from one branch to another), 
   #   first branch HEAD commit is always the second commit (first is the octomerg commmit)

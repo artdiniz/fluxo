@@ -26,7 +26,7 @@ _HELP_OPTIONS="\
   -o | --output <output-directory>    generates diff files in <output-directory>.
 "
 
-_create_string_var _help_diff_scenarios <<-'SCENARIOS'
+_help_diff_scenarios="\
   1) diff the current fluxo branch you are against its previous branch
          $ diff
 
@@ -38,7 +38,7 @@ _create_string_var _help_diff_scenarios <<-'SCENARIOS'
 
   4) diff any 2 branches against each other (no need to be in fluxo order)
          $ diff branch1..branch2
-SCENARIOS
+"
 
 _create_string_var _HELP_OTHER <<-_HELP_OTHER
 	$(tput bold)DIFF SCENARIOS$(tput sgr0)
