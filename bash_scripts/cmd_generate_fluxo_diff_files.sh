@@ -2,7 +2,7 @@
 
 _HELP_TITLE="FLUXO-DIFF"
 
-_HELP_USAGE="\
+_HELP_USAGE="
   diff 
   diff <some-fluxo-branch> | <any-branch>..<any-other-branch>
   diff -a | --all
@@ -12,7 +12,7 @@ _HELP_USAGE="\
   diff ( -o | --output-folder ) <output-directory> -a | --all
 "
 
-_HELP_PARAMS="\
+_HELP_PARAMS="
   <some-fluxo-branch>
       is a fluxo branch you want to get the diff off. Defaults to current branch.
       The '_fluxo_branches' file will be read to determine wich branch is the previous fluxo branch.
@@ -21,12 +21,12 @@ _HELP_PARAMS="\
       is any set of branches you want to diff using _fluxo_* file rules. Those branchs don't need to be fluxo branches.
 "
 
-_HELP_OPTIONS="\
+_HELP_OPTIONS="
   -a | --all                          diff all branches following '_fluxo_branches' file.
   -o | --output <output-directory>    generates diff files in <output-directory>.
 "
 
-_help_diff_scenarios="\
+_help_diff_scenarios="
   1) diff the current fluxo branch you are against its previous branch
          $ diff
 

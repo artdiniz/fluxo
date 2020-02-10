@@ -33,15 +33,11 @@ function _count_start_new_lines {
 		_create_string_var _text < /dev/stdin
 	fi
 
-	local _count=0
+	local _normal_line_count="$(_count_lines "$_text")"
 
- 	while IFS= read -r _text_line; do
-		if [ "$_text_line" = '' ]; then 
-			(( _count++ ))
-		else
-			break
-		fi
-	done <<< "$(printf '%b' "$_text")"
+	local _trimmed_start_line_count="$( _trim_start "$_text" | _count_lines )"
+
+	local _count=$(( $_normal_line_count - $_trimmed_start_line_count ))
 
 	printf '%s' "$_count"
 }
@@ -54,12 +50,13 @@ function _count_end_new_lines {
 		_create_string_var _text < /dev/stdin
 	fi
 
-	local _text_line_count="$( count "$_text" )"
+	local _normal_line_count="$(_count_lines "$_text")"
 
-	local _trimmed_end_text="$( printf '%b' "$_text" )"
-	local _trimmed_end_text_line_count="$( count "$_trimmed_end_text" )"
+	local _trimmed_end_line_count="$( _trim_end "$_text" | _count_lines )"
 
-	printf '%s' $(( $_text_line_count - $_trimmed_end_text_line_count ))
+	local _count=$(( $_normal_line_count - $_trimmed_end_line_count ))
+
+	printf '%s' "$_count"
 }
 
 function _trim_start {
@@ -70,20 +67,18 @@ function _trim_start {
 		_create_string_var _text < /dev/stdin
 	fi
 
-	local _count=0
-	local _started=1
-	local _trimmed_start_text=""
+	local _text_line_count=$(_count_lines "$_text")
 
- 	while IFS= read -r _text_line; do
-		if [ $_started -eq 1 ] && [ "$_text_line" = '' ]; then 
-			(( _count++ ))
+	local _start_newline_count=0
+	while IFS= read -r _text_line; do
+		if [ "$_text_line" = '' ]; then 
+			(( _start_newline_count++ ))
 		else
-			_started=0
-			_trimmed_start_text+="$_text_line\\n"
+			break
 		fi
-	done <<< "$(printf '%b' "$_text")"
-
-	printf '%b' "$_trimmed_start_text"
+	done < <(printf '%b' "$_text")
+	
+	printf '%b' "${_text:$_start_newline_count}"
 }
 
 function _trim_end {
@@ -94,7 +89,7 @@ function _trim_end {
 		_create_string_var _text < /dev/stdin
 	fi
 
-	printf '%b' "$_text" | _reverse_lines | _trim_start | _reverse_lines
+	printf '%b' "$(printf '%b' "$_text")"
 }
 
 function _trim_all {
@@ -114,33 +109,52 @@ function _view_join_if_not_empty {
 	shift
 
 	local _result=""
-
 	local _last_view_end_new_line_count=0
 
+	local _view
+
 	for _view in "$@"; do
-		if [ ! -z "$_view" ]; then
-			local _new_lines_between_count=0
-			local _view_top_new_line_count="$(_count_start_new_lines "$_view")"
 
-			local _trimmed_view="$(_trim_all "$_view")"
+		if [ -z "$_view" ]; then
+			continue
+		fi
 
-			if [ $_last_view_end_new_line_count -gt $_view_top_new_line_count ]; then
-				_new_lines_between_count=$_last_view_end_new_line_count
-			else
-				_new_lines_between_count=$_view_top_new_line_count
-			fi
+		local _trimmed_view="$(_trim_all "$_view")"
+
+		local _new_lines_between_count=0
+
+		local _view_top_new_line_count="$(_count_start_new_lines "$_view")"
+
+		if [ $_last_view_end_new_line_count -gt $_view_top_new_line_count ]; then
+			_new_lines_between_count=$_last_view_end_new_line_count
+		else
+			_new_lines_between_count=$_view_top_new_line_count
+		fi
+
+		if [ -z "$_trimmed_view" ]; then
+			_last_view_end_new_line_count=$_new_lines_between_count
+		else
+			_last_view_end_new_line_count=$(_count_end_new_lines "$_view")
 			
 			local _new_lines_between=""
-
+			local _a=$_new_lines_between_count
 			while [ $_new_lines_between_count -gt 0 ]; do
-			  _new_lines_between+='\n'
-			  (( _new_lines_between_count-- ))
+				_new_lines_between+='\n'
+				(( _new_lines_between_count-- ))
 			done
-			_result="$_result$_new_lines_between$_trimmed_view"
 
-			_last_view_end_new_line_count="$(_count_end_new_lines "$_view")"
-    	fi
+			# _result+="\\n|S:$_view_top_new_line_count|E:$_last_view_end_new_line_count|($_a)\\n$_trimmed_view"
+			_result+="$_new_lines_between$_trimmed_view"
+		fi
   	done
+
+	local _new_lines_end=""
+	while [ $_last_view_end_new_line_count -gt 0 ]; do
+		_new_lines_end+='\n'
+		(( _last_view_end_new_line_count-- ))
+	done
+
+	_result="$_result$_new_lines_end"
 
 	eval "$_result_var_name=\"\$_result\""
 }

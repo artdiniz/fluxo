@@ -4,13 +4,7 @@ _HELP_USAGE="\
   <show | diff | rebase | doctor>
 "
 
-_HELP_DETAILS="\
-$(tput bold)ACTIONS$(tput sgr0)
-
-  -h | --help      Show detailed instructions
-
-$(tput bold)FLUXO COMMANDS$(tput sgr0)
-
+_HELP_PARAMS="\
   <show | s>           Show branches ordered by fluxo steps
   <diff | d>           Generate code diff files for each fluxo step
   <rebase | r>         Rebase after changing any fluxo previous steps
