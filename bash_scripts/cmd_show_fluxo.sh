@@ -138,8 +138,6 @@ function render_branches {
 }
 
 function show_fluxo {
-  _parse_help_args "$@"
-
   local verbose=0
   local raw=0
 

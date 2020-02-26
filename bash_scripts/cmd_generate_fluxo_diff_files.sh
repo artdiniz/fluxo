@@ -163,7 +163,6 @@ function generate_fluxo_diff_files {
     local branches 
     local output_directory
 
-    _parse_help_args "$@"
     _parse_args branches output_directory "$@"
 
     branches="$(printf %b "$branches")"

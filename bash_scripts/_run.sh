@@ -19,21 +19,25 @@ case "$1" in
 show|s)
 	shift
 	. "$_FLUXO_SCRIPTS_DIR/cmd_show_fluxo.sh"
+	_parse_help_args "$@"
 	_lib_run show_fluxo "$@"
 	;;
 drafts|dt)
-	. "$_FLUXO_SCRIPTS_DIR/cmd_show_fluxo.sh"
 	shift
+	. "$_FLUXO_SCRIPTS_DIR/cmd_show_fluxo.sh"
+	_parse_help_args "$@"
 	_lib_run show_fluxo --drafts "$@"
 	;;
 diff|d)
 	shift
 	. "$_FLUXO_SCRIPTS_DIR/cmd_generate_fluxo_diff_files.sh"
+	  _parse_help_args "$@"
 	_lib_run generate_fluxo_diff_files "$@"
 	;;
 rebase|r)
 	shift
 	. "$_FLUXO_SCRIPTS_DIR/cmd_rebase_fluxo.sh"
+	_parse_help_args "$@"
 	_lib_run rebase_fluxo "$@"
 	;;
 doctor|dr)

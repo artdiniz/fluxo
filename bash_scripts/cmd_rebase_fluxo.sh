@@ -176,7 +176,6 @@ function rebase_fluxo {
   local _action_arg
   local _new_commits_branch_arg _next_branch_arg
 
-  _parse_help_args "$@"
   _parse_args _action_arg _new_commits_branch_arg _next_branch_arg "$@"
 
   if [ ! -z "$_action_arg" ]; then
