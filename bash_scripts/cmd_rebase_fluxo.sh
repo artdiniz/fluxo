@@ -46,9 +46,9 @@ $(tput bold)WHY?$(tput sgr0)
   Se tívessemos mais 25 aulas, teríamos que faser isso mais 25 vezes!
 
   Esse comando fará isso para você automaticamente.   
-  \`git rebase-fluxo aula1 aula2\` => Passa as mudanças da aula1 para a aula2 e para todas as aulas que vierem depois. 
+  \`fluxo rebase aula1 aula2\` => Passa as mudanças da aula1 para a aula2 e para todas as aulas que vierem depois. 
 
-  A ordem das branches é definida de maneira inteligente por esse comando
+  A ordem das branches é definida de acordo com a ordem definida pelo comando \`fluxo show\`
 "
 
 function wait_confirmation {
@@ -176,7 +176,7 @@ function rebase_fluxo {
   local _action_arg
   local _new_commits_branch_arg _next_branch_arg
 
-  _parse_help_args "$1"
+  _parse_help_args "$@"
   _parse_args _action_arg _new_commits_branch_arg _next_branch_arg "$@"
 
   if [ ! -z "$_action_arg" ]; then

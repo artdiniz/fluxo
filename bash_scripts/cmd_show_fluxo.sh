@@ -23,10 +23,10 @@ _HELP_OTHER="\
 $(tput bold)SAMPLE COMMANDS$(tput sgr0)
 
   - Shows last commit short hash before branch name:
-      git fls --format=\"%(color:cyan) %(objectname:short) %(color:reset) %(refname:short)\"
+      fluxo show --format=\"%(color:cyan) %(objectname:short) %(color:reset) %(refname:short)\"
 
   - Shows list of full hashes for each branch HEAD commit
-      git fls --format=\"%(objectname)\"
+      fluxo show --format=\"%(objectname)\"
 "
 
 function get_branches_details {
