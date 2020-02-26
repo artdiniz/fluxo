@@ -19,16 +19,20 @@ _HELP_OTHER="\
 function checkout_fluxo {
     local _branch_name="$1"
 
-    local all_branches=$(git branch --format="%(refname:short)")
+    local all_branches="$(git branch --format="%(refname:short)")"
     local _branch
     _branch="$(_lib_run filter_branches_in "$_branch_name" "$all_branches")"
 
     if [ -z "$_branch" ]; then
-      printf '%b\n' "Unknown branch named '$_branch_name'"
+      printf '%b\n' "Branch desconhecida: $_branch_name"
       exit 1
     fi
 
-    git worktree remove "$_checkout_output_folder"
+    rm -r "$_checkout_output_folder" 2&> /dev/null
 
-    git worktree add "$_checkout_output_folder" "$_branch_name"
+    git worktree prune
+
+    git worktree add "$_checkout_output_folder" "$_branch_name" > /dev/null
+
+    printf '\nArquivos do passo "%s" disponíveis em:\n    file://%s\n\n' "$_branch" "$(cd $_checkout_output_folder; pwd)"
 }
