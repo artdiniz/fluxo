@@ -165,36 +165,27 @@ function _set_state {
 
 __EVAL_COUNTER=0
 function __eval {
-	(( __EVAL_COUNTER++ ))
-	local _counter=$__EVAL_COUNTER
 	local _initial_eval_text="$1"
 
-	local _eval_var_name="_eval_value_$_counter"
-	local _temp_eval_var_name="_temp$_eval_var_name"
-	
-	eval "_temp_eval_value_$_counter=\"$_initial_eval_text\""
-
-	if [ ! -z "$__temp_eval_value" ]; then
-		_create_string_view_var "$_eval_var_name" < <(printf '%b' "${!_temp_eval_var_name}")
-	fi
-
-	printf '%b' "$_temp_eval_var_name"
+	__deep_eval "$_initial_eval_text"
 }
 
 function __deep_eval {
 	local _deep_eval_text="$1"
 	local _previous_deep_eval_text="$2"
 
-	local _temp_deep_eval_value=""
+	local _temp_deep_eval_value
+	local _final_eval_value
 
-	if [ "$_deep_eval_text" != "$_previous_deep_eval_text" ]; then
+	eval "_temp_deep_eval_value=\"$_deep_eval_text\""
+	eval "_final_eval_value=\"$_temp_deep_eval_value\""
 
-		eval "_temp_deep_eval_value=\"$_deep_eval_text\""
-
-		__deep_eval "$_temp_deep_eval_value" "$_deep_eval_text"
-	else
-		printf '%b' "$_deep_eval_text"
-	fi 
+	# if [ "$_deep_eval_text" != "$_temp_deep_eval_value" ]; then
+		
+	# 	__deep_eval "$_temp_deep_eval_value" "$_deep_eval_text"
+	# else
+		printf '%b' "$_final_eval_value"
+	# fi 
 }
 
 
@@ -242,14 +233,12 @@ function _create_string_view_var {
 		|| [ $_current_state -eq $_state_end_brace_expansion ]; then
 			_current_var_text+="$_current_char"
 			
-			printf '1Total:\n===|%b|===\nCurrent:===|%q|===\nVar:===|%b|===\n*************\n\n' "$_total_result" "$_current_result_text" "$_current_var_text"
+			# printf '1Total:\n===|%b|===\nCurrent:===|%q|===\nVar:===|%b|===\n*************\n\n' "$_total_result" "$_current_result_text" "$_current_var_text"
 
-			local _temp_result_text=""			
-			
-			local _temp_var="$(__eval "$_current_var_text")"
-			printf "\n\n|$_temp_var:${!_temp_var}|\n\n"
+			local _temp_result_text			
+			_create_string_var _evalued_text < <(__eval "$_current_var_text")
 
-			_view_join_if_not_empty _temp_result_text "$_total_result" "$_current_result_text" "${!_temp_var}"
+			_view_join_if_not_empty _temp_result_text "$_total_result" "$_current_result_text" "$_evalued_text"
 
 			_total_result="$_temp_result_text"
 
@@ -258,13 +247,12 @@ function _create_string_view_var {
 		fi
 
 		if [ $_current_state -eq $_state_end_simple_expansion ]; then
-			printf '2Total:\n===|%b|===\nCurrent:===|%q|===\nVar:===|%b|===\n*************\n\n' "$_total_result" "$_current_result_text" "$_current_var_text"
+			# printf '2Total:\n===|%b|===\nCurrent:===|%q|===\nVar:===|%b|===\n*************\n\n' "$_total_result" "$_current_result_text" "$_current_var_text"
 			
-			local _temp_var="$(__eval "$_current_var_text")"
+			local _evalued_text			
+			_create_string_var _evalued_text < <(__eval "$_current_var_text")
 
-			printf "\n\n|$_temp_var:${!_temp_var}|\n\n"
-
-			_view_join_if_not_empty _temp_result_text "$_total_result" "$_current_result_text" "${!_temp_var}"
+			_view_join_if_not_empty _temp_result_text "$_total_result" "$_current_result_text" "$_evalued_text"
 
 			_total_result="$_temp_result_text"
 
@@ -274,12 +262,12 @@ function _create_string_view_var {
 		_prev_state=$_current_state
 	done < <(printf '%b' "$_text")
 
-	printf '3Total:\n===|%b|===\nCurrent:===|%q|===\nVar:===|%b|===\n*************\n\n' "$_total_result" "$_current_result_text" "$_current_var_text"			
+	# printf '3Total:\n===|%b|===\nCurrent:===|%q|===\nVar:===|%b|===\n*************\n\n' "$_total_result" "$_current_result_text" "$_current_var_text"			
 
-	local _temp_var="$(__eval "$_current_var_text")"
-	printf "\n\n|$_temp_var:${!_temp_var}|\n\n"
+	local _evalued_text			
+	_create_string_var _evalued_text < <(__eval "$_current_var_text")
 
-	_view_join_if_not_empty _temp_result_text "$_total_result" "$_current_result_text" "${!_temp_var}"
+	_view_join_if_not_empty _temp_result_text "$_total_result" "$_current_result_text" "$_evalued_text"
 
 	_total_result="$_temp_result_text"
 

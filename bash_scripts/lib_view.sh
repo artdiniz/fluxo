@@ -71,7 +71,7 @@ function _trim_start {
 
 	local _start_newline_count=0
 	while IFS= read -r _text_line; do
-		if [ "$_text_line" = '' ]; then 
+		if [ "$_text_line" = '' ]; then
 			(( _start_newline_count++ ))
 		else
 			break
@@ -114,7 +114,6 @@ function _view_join_if_not_empty {
 	local _view
 
 	for _view in "$@"; do
-
 		if [ -z "$_view" ]; then
 			continue
 		fi
@@ -134,8 +133,6 @@ function _view_join_if_not_empty {
 		if [ -z "$_trimmed_view" ]; then
 			_last_view_end_new_line_count=$_new_lines_between_count
 		else
-			_last_view_end_new_line_count=$(_count_end_new_lines "$_view")
-			
 			local _new_lines_between=""
 			local _a=$_new_lines_between_count
 			while [ $_new_lines_between_count -gt 0 ]; do
@@ -145,6 +142,8 @@ function _view_join_if_not_empty {
 
 			# _result+="\\n|S:$_view_top_new_line_count|E:$_last_view_end_new_line_count|($_a)\\n$_trimmed_view"
 			_result+="$_new_lines_between$_trimmed_view"
+			
+			_last_view_end_new_line_count=$(_count_end_new_lines "$_view")
 		fi
   	done
 

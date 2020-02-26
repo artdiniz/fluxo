@@ -31,21 +31,9 @@ function _help_print_full_message {
     # --help                                       show detailed instructions
 
 	local _help_view
-	
-	# local _new_line=$'\n'
-	# _view_join_if_not_empty _help_view \
-	# 	"$_HELP_TITLE" \
-	# 	"$_new_line$_new_line" \
-	# 	"$_usage_view" \
-	# 	"$_new_line$_new_line" \
-	# 	"$_options_view" \
-	# 	"$_new_line$_new_line" \
-	# 	"$_params_view" \
-	# 	"$_new_line$_new_line" \
-	# 	"$_other_view" \
-	# 	"$_new_line$_new_line"
 
 	_create_string_view_var _help_view <<-'MESSAGE'
+
 		$_HELP_TITLE
 
 		$_usage_view
@@ -56,8 +44,9 @@ function _help_print_full_message {
 
 		$_other_view
 	MESSAGE
-	
-	printf '%b' "$_help_view" 
+
+	printf '\e[2A\e[0J'
+	printf '%b' "$_help_view" | less -XRF
 }
 
 function _help_print_usage_error_and_die {
