@@ -6,12 +6,13 @@ _error_handling_ignore_next_warning_var=1
 
 function _err_report {
     if [ $_error_handling_ignore_next_warning_var = 1 ]; then
-        printf '%b\n' "Initial Command: $1" "Error at line $2." "Executing: $3"
+        printf '\n'
+        printf '%b\n' "Initial Command: $1" "Executing: $3" "Error at line $2."
     else
         _error_handling_ignore_next_warning_var=1
     fi
 
-    return 1
+    exit 1
 }
 
 function _error_handling_ignore_next_warning {
