@@ -211,7 +211,13 @@ function show_fluxo {
 	
   if [ $show_unexistent -eq 1 ]; then
     local unexistent_fluxo_branches
+
     unexistent_fluxo_branches="$(_lib_run get_unexistent_fluxo_branches)"
+    
+    if test $? -eq 1; then
+      printf '%b\n' "$unexistent_fluxo_branches"
+      exit 1
+    fi
 
     local number_of_unexistent_fluxo_branches
     number_of_unexistent_fluxo_branches="$(_lib_run count "$unexistent_fluxo_branches")"
@@ -232,17 +238,38 @@ function show_fluxo {
   fi
 
   if [ $show_existent -eq 1 ]; then
-    local existent_branches="$(_lib_run get_existent_fluxo_branches)"
+    local existent_branches
+    existent_branches="$(_lib_run get_existent_fluxo_branches)"
+
+    if test $? -eq 1; then
+      printf '%b\n' "$existent_branches"
+      exit 1
+    fi
+
     local existent_view="$(render_branches "fluxo" "$existent_branches" "$format" "$verbose" "$raw")"
   fi
 
   if [ $show_unknow -eq 1 ]; then 
-    local unknown_to_fluxo_branches="$(_lib_run get_unknown_branches)"
+    local unknown_to_fluxo_branches
+    unknown_to_fluxo_branches="$(_lib_run get_unknown_branches)"
+
+    if test $? -eq 1; then
+      printf '%b\n' "$unknown_to_fluxo_branches"
+      exit 1
+    fi
+
     local unknown_to_fluxo_view="$(render_branches "unknown" "$unknown_to_fluxo_branches" "$format" "$verbose" "$raw" "$(tput setaf 5)")"
   fi
 
   if [ $show_drafts -eq 1 ]; then
-    local known_branches="$(_lib_run get_existent_fluxo_branches)"
+    local known_branches
+    known_branches="$(_lib_run get_existent_fluxo_branches)"
+
+    if test $? -eq 1; then
+      printf '%b\n' "$known_branches"
+      exit 1
+    fi
+
     local unknown_to_fluxo_branches="$(_lib_run get_unknown_branches)"
 
     if [ -n "$from_branch_arg" ] && [ -z "$(_lib_run filter_branches_in "$known_branches" "$from_branch_arg")" ]; then

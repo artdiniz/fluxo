@@ -32,6 +32,7 @@ function get_unknown_branches {
     _lib_run filter_branches_not_in "$all_branches" "$fluxo_branches_from_file"
   else
     printf '%b' "$fluxo_branches_from_file"
+    return 1
   fi
 }
 
@@ -43,6 +44,7 @@ function get_unexistent_fluxo_branches   {
     _lib_run filter_branches_not_in "$fluxo_branches_from_file" "$all_branches"
   else
     printf '%b' "$fluxo_branches_from_file"
+    return 1
   fi
   
 }
@@ -55,5 +57,6 @@ function get_existent_fluxo_branches {
     _lib_run filter_branches_in "$fluxo_branches_from_file" "$all_branches"
   else
     printf '%b' "$fluxo_branches_from_file"
+    return 1
   fi
 }
