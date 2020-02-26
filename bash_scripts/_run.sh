@@ -1,7 +1,7 @@
 _HELP_TITLE="FLUXO"
 
 _HELP_USAGE="\
-  <show | diff | rebase | doctor>
+  <show | diff | checkout | rebase | doctor>
 "
 
 _HELP_PARAMS="\
@@ -9,6 +9,7 @@ _HELP_PARAMS="\
   <diff | d>           Generate code diff files for each fluxo step
   <rebase | r>         Rebase after changing any fluxo previous steps
   <doctor | dr>        Check fluxo project health (Are steps synchronized?)
+  <checkout | co>      Checkout fluxo step to \`_fluxo_steps\` folder
 "
 
 navigate_to_git_repository_root
@@ -21,6 +22,12 @@ show|s)
 	. "$_FLUXO_SCRIPTS_DIR/cmd_show_fluxo.sh"
 	_parse_help_args "$@"
 	_lib_run show_fluxo "$@"
+	;;
+checkout|co)
+	shift
+	. "$_FLUXO_SCRIPTS_DIR/cmd_checkout.sh"
+	_parse_help_args "$@"
+	_lib_run checkout_fluxo "$@"
 	;;
 drafts|dt)
 	shift
