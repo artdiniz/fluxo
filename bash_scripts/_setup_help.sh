@@ -66,6 +66,7 @@ function _help_print_usage_error_and_die {
 	MESSAGE
 
 	printf '%b' "$_message"
+	_error_handling_ignore_next_warning
 	exit 129
 }
 
@@ -75,7 +76,7 @@ function _parse_help_args {
 		case "$1" in
 			-h|--help)
 				if [ $_other_args_count -gt 0 ]; then
-					_help_print_usage_error_and_die "If you want it, --help must be the only option"
+					_lib_run _help_print_usage_error_and_die "If you want it, --help must be the only option"
 				else
 					_lib_run _help_print_full_message
 					exit $?

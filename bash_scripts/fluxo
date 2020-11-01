@@ -3,21 +3,14 @@
 # Only global vars, imports and general setup is done here
 # Main code starts in ./_run.sh
 
-_FLUXO_COMMAND_NAME="$(basename "$0")"
-_FLUXO_COMMAND="$_FLUXO_COMMAND_NAME $@"
+if [ -L "$BASH_SOURCE" ]; then
+	_SCRIPT_PATH="$(ls -l "$BASH_SOURCE" | sed 's/^.* -> \(.*\)$/\1/')"
+else
+	_SCRIPT_PATH="$BASH_SOURCE"
+fi
 
-_FLUXO_SCRIPTS_DIR="$(
-	_fluxo_script_symlink_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
-	_relative_symlinked_dir="$( dirname "$(readlink "$_fluxo_script_symlink_dir/fluxo")" )"
+_FLUXO_SCRIPTS_DIR="$( cd "$( dirname "$_SCRIPT_PATH" )" >/dev/null 2>&1 && pwd )"
 
-	cd "$_fluxo_script_symlink_dir" >/dev/null 2>&1
-	cd "$_relative_symlinked_dir" >/dev/null 2>&1
-	pwd
-)"
+_env_file="$_FLUXO_SCRIPTS_DIR/_env.sh"
 
-_error_handling_current_command="$_FLUXO_COMMAND"
-. "$_FLUXO_SCRIPTS_DIR/_setup_error_handling.sh"
-. "$_FLUXO_SCRIPTS_DIR/_setup_lib_run.sh"
-. "$_FLUXO_SCRIPTS_DIR/_setup_help.sh"
-
-. "$_FLUXO_SCRIPTS_DIR/_run.sh"
+/usr/bin/env bash -c "BASH_ENV='$_env_file' $_FLUXO_SCRIPTS_DIR/_run.sh \$@" "$_SCRIPT_PATH" $@
