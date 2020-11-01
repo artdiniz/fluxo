@@ -26,21 +26,22 @@ basher install artdiniz/fluxo
   2. Enable execution permissions for all cloned files:
     
   ```bash
-  chmod -R +x ~/the/folder
+  chmod -R +x ~/the/folder/fluxo
   ```
-  3. Create a git alias in `~/.gitconfig` pointing to the fluxo bash script file:
+
+  3. Get it to
+
   ```
-  [alias]
-    fluxo = !bash ~/the/folder/fluxo/bash_scripts/fluxo
+  ln -s ~/the/folder/fluxo/bash_scripts/fluxo /usr/local/bin/fluxo
   ```
   
 # Usage
 
-You can run `fluxo -- --help` for usage info:
+You can run `fluxo --help` for usage info:
 
  ```
   fluxo <show | diff | rebase | doctor>
-  fluxo -- <-h|--help>
+  fluxo <-h|--help>
 
   $(tput bold)ACTIONS$(tput sgr0)
 
