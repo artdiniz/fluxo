@@ -13,4 +13,4 @@ _FLUXO_SCRIPTS_DIR="$( cd "$( dirname "$_SCRIPT_PATH" )" >/dev/null 2>&1 && pwd 
 
 _env_file="$_FLUXO_SCRIPTS_DIR/_env.sh"
 
-/usr/bin/env bash -c "BASH_ENV='$_env_file' $_FLUXO_SCRIPTS_DIR/_run.sh \$@" "$_SCRIPT_PATH" $@
+/usr/bin/env bash -c "_COMMAND_META_COMMAND='$BASH_SOURCE' _COMMAND_META_ARGS='$@' BASH_ENV='$_env_file' $_FLUXO_SCRIPTS_DIR/_run.sh \$@" "$BASH_SOURCE" $@

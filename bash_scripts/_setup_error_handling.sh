@@ -8,14 +8,20 @@ _error_handling_ignore_next_warning_var=1
 _has_already_run=1
 
 function _err_report {
-    local _command="$1"
-    local _stack_top_command="$2"
-    local _line_number="$3"
-    local _status_code="$4"
+    local _source_file="$1"
+    local _command="$(basename "$2")"
+    local _commmand_args="$3"
+    local _stack_top_command="$4"
+    local _line_number="$5"
+    local _status_code="$6"
+
+    local _error_tag="$(tput setab 1)$(tput setaf 7)$(tput bold) Unexpected Error $(tput sgr0)"
+    local _error_tag_space="                  "
+
     if [ $_error_handling_ignore_next_warning_var = 1 ] && [ $_status_code -gt 0 ] && [ $_has_already_run -eq 1 ]; then
         printf '\n'
-        printf "$(tput setab 1)$(tput setaf 7)$(tput bold) %s $(tput sgr0) in '%s' \n status code %s at %s:%s\\n\\n" \
-            "Unexpected Error" "$_command" "$_status_code" "$_stack_top_command" "$_line_number"
+        printf "$_error_tag Command    : %s \n$_error_tag_space Source file: %s \n$_error_tag_space Exit code  : %s \n$_error_tag_space Stack top  : %s:%s\\n\\n" \
+            "$_command $_commmand_args" "$_source_file" "$_status_code" "$_stack_top_command" "$_line_number"
     elif [ $_error_handling_ignore_next_warning_var = 0 ]; then
         _error_handling_ignore_next_warning_var=1
     fi
@@ -35,5 +41,5 @@ function _error_handling_ignore_next_warning {
     }
 }
 
-trap '_err_report "$0 $@" "$_error_handling_current_exec" $LINENO $?' ERR
-trap '_err_report "$0 $@" "$_error_handling_current_exec" $LINENO $?' EXIT
+trap '_err_report "$0" "$_COMMAND_META_COMMAND" "$_COMMAND_META_ARGS" "$_error_handling_current_exec" $LINENO $?' ERR
+trap '_err_report "$0" "$_COMMAND_META_COMMAND" "$_COMMAND_META_ARGS" "$_error_handling_current_exec" $LINENO $?' EXIT
